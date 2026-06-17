@@ -47,6 +47,24 @@ import { exchange } from "./index.mjs";
 await exchange("腾讯视频", 1);
 ```
 
+### 按昵称查找账号
+
+在配置文件中为账号设置 `nickname`，兑换时可以直接用昵称代替编号：
+
+```json
+{
+  "caiyun": [
+    { "auth": "xxx", "nickname": "我的账号" },
+    { "auth": "yyy", "nickname": "小号" }
+  ]
+}
+```
+
+```javascript
+import { exchange } from "./index.mjs";
+await exchange(251230069, "我的账号");
+```
+
 ### 自定义提前量
 
 默认在整点前 10ms 发起请求，可以调整：
