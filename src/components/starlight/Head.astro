@@ -1,7 +1,6 @@
 ---
 const { head } = Astro.locals.starlightRoute;
 
-// 检查是否是密码页面
 const isPasswordPage = Astro.url.pathname === '/password' || Astro.url.pathname === '/password/';
 ---
 
@@ -9,13 +8,10 @@ const isPasswordPage = Astro.url.pathname === '/password' || Astro.url.pathname 
 
 {!isPasswordPage && (
   <script is:inline>
-    // 密码验证脚本
     (function() {
-      // 检查是否已验证
-      const verified = sessionStorage.getItem('doc_verified');
+      var verified = sessionStorage.getItem('doc_verified');
       if (verified !== 'true') {
-        // 重定向到密码页面
-        window.location.href = '/mcloud-docs/password';
+        window.location.replace('/password');
       }
     })();
   </script>
