@@ -29,32 +29,59 @@ node exchange.mjs
 
 ## 整点抢兑
 
+### 基本用法
+
 ```javascript
 import { exchange } from "./index.mjs";
-
-// 单账号兑换（奖品ID + 账号手机号/昵称）
 await exchange(251230069, "13800138000");
+```
 
-// 按名称兑换
-await exchange("腾讯视频", "我的账号");
+第一个参数是奖品 ID（从 `printExchangeList` 获取），第二个参数是你的账号手机号。
 
-// 自定义提前量（毫秒，默认 10ms）
+### 按奖品名称兑换
+
+如果不想记 ID，可以直接写奖品名称：
+
+```javascript
+import { exchange } from "./index.mjs";
+await exchange("腾讯视频", "13800138000");
+```
+
+### 自定义提前量
+
+默认在整点前 10ms 发起请求，可以调整：
+
+```javascript
+import { exchange } from "./index.mjs";
 await exchange(251230069, "13800138000", 50);
+```
 
-// 多账号并发兑换
+第三个参数是提前多少毫秒，默认 10。
+
+### 多账号同时兑换
+
+```javascript
+import { exchange } from "./index.mjs";
 await exchange([
   [251230069, "13800138000"],
-  ["酷狗音乐", "我的账号"],
+  ["酷狗音乐", "13900139000"],
 ], 50);
 ```
 
-**抢兑流程**：自动等待到运行时间（9:59:40 或 11:59:40）→ 预热（滑块验证）→ 精确等待整点 → 立即兑换
+数组中每个元素是 `[奖品, 账号]`，最后一个参数是提前量。
 
-跳过等待（测试用）：
+### 跳过等待直接兑换
+
+测试时可以跳过整点等待：
 
 ```javascript
+import { exchange } from "./index.mjs";
 await exchange(251230069, "13800138000", 10, true);
 ```
+
+第四个参数 `true` 表示跳过等待，直接执行兑换。
+
+**抢兑流程**：自动等待到运行时间（9:59:40 或 11:59:40）→ 预热（滑块验证）→ 精确等待整点 → 立即兑换
 
 ## 按条件查找奖品
 
