@@ -11,6 +11,7 @@ const isPasswordPage = Astro.url.pathname === '/password' || Astro.url.pathname 
     (function() {
       var verified = sessionStorage.getItem('doc_verified');
       if (verified !== 'true') {
+        sessionStorage.setItem('doc_return_to', window.location.pathname + window.location.search + window.location.hash);
         window.location.replace('/password');
       }
     })();
