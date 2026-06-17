@@ -33,10 +33,10 @@ node exchange.mjs
 
 ```javascript
 import { exchange } from "./index.mjs";
-await exchange(251230069, "13800138000");
+await exchange(251230069, 1);
 ```
 
-第一个参数是奖品 ID（从 `printExchangeList` 获取），第二个参数是你的账号手机号。
+第一个参数是奖品 ID（从 `printExchangeList` 获取），第二个参数是账号编号（从 1 开始）。
 
 ### 按奖品名称兑换
 
@@ -44,7 +44,7 @@ await exchange(251230069, "13800138000");
 
 ```javascript
 import { exchange } from "./index.mjs";
-await exchange("腾讯视频", "13800138000");
+await exchange("腾讯视频", 1);
 ```
 
 ### 自定义提前量
@@ -53,7 +53,7 @@ await exchange("腾讯视频", "13800138000");
 
 ```javascript
 import { exchange } from "./index.mjs";
-await exchange(251230069, "13800138000", 50);
+await exchange(251230069, 1, 50);
 ```
 
 第三个参数是提前多少毫秒，默认 10。
@@ -63,8 +63,8 @@ await exchange(251230069, "13800138000", 50);
 ```javascript
 import { exchange } from "./index.mjs";
 await exchange([
-  [251230069, "13800138000"],
-  ["酷狗音乐", "13900139000"],
+  [251230069, 1],
+  ["酷狗音乐", 2],
 ], 50);
 ```
 
@@ -76,7 +76,7 @@ await exchange([
 
 ```javascript
 import { exchange } from "./index.mjs";
-await exchange(251230069, "13800138000", 10, true);
+await exchange(251230069, 1, 10, true);
 ```
 
 第四个参数 `true` 表示跳过等待，直接执行兑换。
