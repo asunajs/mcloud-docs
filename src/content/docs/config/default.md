@@ -29,6 +29,9 @@ description: 所有可选字段及默认值
     "开启": false,
     "每日生成次数": 5
   },
+  "红包派对": {
+    "开启": true
+  },
   "云朵大作战": {
     "开启": false,
     "目标排名": 500,
@@ -41,9 +44,6 @@ description: 所有可选字段及默认值
   },
   "文件获取方式": 1,
   "mail139": {
-    "enable": false,
-    "sid": "",
-    "rmkey": "",
     "aiChatMessage": "你好",
     "sendMailTo": "",
     "sendMailSubject": "",

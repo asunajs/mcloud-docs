@@ -17,10 +17,11 @@ description: 所有配置字段的详细说明
 | `剩余多少天刷新token` | `number` | ❌ | `10` | 剩余多少天刷新 token，范围 1-30 |
 | `微信抽奖` | `WechatDrawConfig` | ❌ | `{ 次数: 1, 间隔: 500 }` | 微信抽奖配置 |
 | `AI新头像` | `AINewAvatarConfig` | ❌ | `{ 开启: false, 每日生成次数: 5 }` | AI 新头像配置 |
+| `红包派对` | `RedPacketConfig` | ❌ | `{ 开启: true }` | 红包派对配置 |
 | `云朵大作战` | `CloudBattleConfig` | ❌ | `{ 开启: false, ... }` | 云朵大作战配置 |
 | `春日拍拍大作战` | `SpringBattleConfig` | ❌ | `{ 开启: false }` | 春日拍拍大作战配置 |
 | `文件获取方式` | `number` | ❌ | `1` | 文件获取方式，值为 `1` 或 `2` |
-| `mail139` | `Mail139Config` | ❌ | `{ enable: false, ... }` | mail139 配置 |
+| `mail139` | `Mail139Config` | ❌ | `{ aiChatMessage: "你好", ... }` | mail139 配置 |
 
 ## 摇一摇配置 (ShakeConfig)
 
@@ -52,6 +53,12 @@ description: 所有配置字段的详细说明
 | `开启` | `boolean` | `false` | - | 是否开启 AI 新头像功能 |
 | `每日生成次数` | `number` | `5` | 1-20 | 每日生成次数 |
 
+## 红包派对配置 (RedPacketConfig)
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `开启` | `boolean` | `true` | 是否开启红包派对任务 |
+
 ## 云朵大作战配置 (CloudBattleConfig)
 
 | 字段 | 类型 | 默认值 | 范围 | 说明 |
@@ -72,9 +79,6 @@ description: 所有配置字段的详细说明
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `enable` | `boolean` | `false` | 是否开启 mail139 任务自动化 |
-| `sid` | `string` | `""` | mail139 sid |
-| `rmkey` | `string` | `""` | mail139 rmkey |
 | `aiChatMessage` | `string` | `"你好"` | AI 工作台对话内容 |
 | `sendMailTo` | `string` | `""` | 发邮件收件人 |
 | `sendMailSubject` | `string` | `""` | 邮件主题 |

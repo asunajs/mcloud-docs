@@ -33,12 +33,16 @@ export default defineConfig({
 						{ autogenerate: { directory: 'features' } },
 					],
 				},
-				{
-					label: '技术',
-					items: [
-						{ autogenerate: { directory: 'technical' } },
-					],
-				},
+			{
+				label: '技术',
+				items: [
+					{ autogenerate: { directory: 'technical' } },
+				],
+			},
+			{
+				label: '更新日志',
+				slug: 'changelog',
+			},
 			],
 			locales: {
 				root: { label: '简体中文', lang: 'zh-CN' },

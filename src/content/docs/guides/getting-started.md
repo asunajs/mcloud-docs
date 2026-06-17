@@ -79,9 +79,12 @@ await run();
 6. `appTask` — 应用任务（上传、分享等）
 7. `shakeTask` — 摇一摇（需配置开启）
 8. `msgPushOnTask` — 消息推送奖励
-9. `backupGiftTask` — 备份好礼
-10. `aiAvatarTask` — AI 新头像（需配置开启）
-11. `hc1tTask` — 云朵大作战（需配置开启）
-12. `playAiSpecialTask` — 春日拍拍（需配置开启）
-13. `receive` — 领取云朵
-14. `printPendingPrizes` — 打印待领取奖品
+9. `noticeTask` — 通知奖励（短信/邮箱通知）
+10. `backupGiftTask` — 备份好礼
+11. `aiAvatarTask` — AI 新头像（需配置开启）
+12. `hc1tTask` — 云朵大作战（需配置开启）
+13. `playAiSpecialTask` — 春日拍拍（需配置开启）
+14. `redPacketTask` — 红包派对（默认开启）
+15. `receive` — 领取云朵
+16. `printPendingPrizes` — 打印待领取奖品
+17. `afterTask` — 后续处理
