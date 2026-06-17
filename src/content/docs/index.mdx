@@ -1,0 +1,38 @@
+---
+title: mcloud-sign
+description: 移动云盘自动签到工具 - 自动完成每日签到、领取奖励、参与活动
+template: splash
+hero:
+  tagline: 一个用于中国移动云盘的自动化签到与任务执行工具
+  actions:
+    - text: 快速开始
+      link: /guides/getting-started
+      icon: right-arrow
+    - text: 在 GitHub 上查看
+      link: https://github.com/catlair/mcloud-sign
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+	<Card title="自动签到" icon="star">
+		每日自动登录并完成签到任务，无需手动操作
+	</Card>
+	<Card title="多任务支持" icon="puzzle">
+		红包领取、文件备份、花园种植、盲盒抽奖等
+	</Card>
+	<Card title="消息推送" icon="bell">
+		支持 PushPlus、Server酱、企业微信等多种推送方式
+	</Card>
+	<Card title="多账号管理" icon="seti:user">
+		支持同时管理多个账号，轻松切换
+	</Card>
+	<Card title="类型安全" icon="seti:typescript">
+		基于 TypeScript 构建，提供完整的类型检查
+	</Card>
+	<Card title="高性能" icon="rocket">
+		使用 oxc 工具链和 tsup 构建系统
+	</Card>
+</CardGrid>
