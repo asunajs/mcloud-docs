@@ -27,37 +27,33 @@ node exchange.mjs
 ------------------------
 ```
 
-## 定时整点抢兑
-
-创建 `rush.mjs`，在整点前运行：
+## 整点抢兑
 
 ```javascript
-import { useExchange, loadConfig } from "./index.mjs";
+import { exchange } from "./index.mjs";
 
-const { config } = await loadConfig();
-const { exchange } = await useExchange(config[0]);
+// 单账号兑换（奖品ID + 账号手机号/昵称）
+await exchange(251230069, "13800138000");
 
-// 整点前运行，自动等待到整点并抢兑
-// 参数为奖品 ID 数组（从 printExchangeList 获取）
-await exchange([231228018]);
+// 按名称兑换
+await exchange("腾讯视频", "我的账号");
 
-// 第二个参数为等待偏移量（毫秒），正数提前，负数延后，默认 10ms
-await exchange([231228018], 50); // 提前 50ms
-await exchange([231228018], -20); // 延后 20ms
+// 自定义提前量（毫秒，默认 10ms）
+await exchange(251230069, "13800138000", 50);
+
+// 多账号并发兑换
+await exchange([
+  [251230069, "13800138000"],
+  ["酷狗音乐", "我的账号"],
+], 50);
 ```
 
-```bash
-# 在整点前几分钟运行
-node rush.mjs
-```
+**抢兑流程**：自动等待到运行时间（9:59:40 或 11:59:40）→ 预热（滑块验证）→ 精确等待整点 → 立即兑换
 
-**抢兑流程**：预热（滑块验证）→ 精确等待整点 → 立即兑换
-
-## 跳过等待直接兑换
+跳过等待（测试用）：
 
 ```javascript
-const { exchange } = await useExchange(config[0], { skipDelay: true });
-await exchange([231228018]);
+await exchange(251230069, "13800138000", 10, true);
 ```
 
 ## 按条件查找奖品
