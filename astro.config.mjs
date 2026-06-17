@@ -14,6 +14,9 @@ export default defineConfig({
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/asunajs/mcloud-docs' },
 			],
+			components: {
+				Head: './src/components/starlight/Head.astro',
+			},
 			sidebar: [
 				{
 					label: '指南',
