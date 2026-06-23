@@ -113,18 +113,22 @@
   }
 
   window._addAccount = function() {
+    isUpdatingFromForm = true;
     var id = ++accountCounter;
     accounts.push({ id: id, auth: '', nickname: '', config: getDefaultConfig() });
     renderAccounts();
     updateJSON();
     saveToStorage();
+    isUpdatingFromForm = false;
   };
 
   window._removeAccount = function(id) {
+    isUpdatingFromForm = true;
     accounts = accounts.filter(function(a) { return a.id !== id; });
     renderAccounts();
     updateJSON();
     saveToStorage();
+    isUpdatingFromForm = false;
   };
 
   window._updateAccount = function(id, field, value) {
