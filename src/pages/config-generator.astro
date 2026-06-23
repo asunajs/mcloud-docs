@@ -1,0 +1,256 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = '配置生成器' } = Astro.props;
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - mcloud-sign</title>
+    <link rel="stylesheet" href="/monaco-editor/vs/editor/editor.main.css">
+    <style is:global>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f5f5f5;
+        min-height: 100vh;
+        padding: 2rem;
+      }
+      .container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .header { text-align: center; margin-bottom: 2rem; }
+      .logo { font-size: 1.8rem; font-weight: bold; color: #333; }
+      .subtitle { color: #666; margin-top: 0.5rem; }
+      .section {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fafafa;
+      }
+      .section-title { font-size: 0.95rem; font-weight: 600; color: #333; margin-bottom: 1rem; }
+      .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+      .form-row.full { grid-template-columns: 1fr; }
+      .form-group { display: flex; flex-direction: column; }
+      .form-group label { font-size: 14px; font-weight: 500; color: #555; margin-bottom: 0.4rem; }
+      .form-group input, .form-group select {
+        padding: 10px 12px;
+        font-size: 14px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: white;
+      }
+      .form-group input:focus, .form-group select:focus { border-color: #667eea; outline: none; }
+      .btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .btn:hover { opacity: 0.9; }
+      .btn-danger { background: #e53e3e; }
+      .btn-sm { padding: 6px 12px; font-size: 12px; }
+      .btn-group { display: flex; gap: 0.5rem; margin: 1rem 0; }
+      .account-item {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .account-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #eee;
+      }
+      .account-title { font-weight: 600; color: #333; }
+      .output-section {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #1a1a2e;
+        border-radius: 8px;
+      }
+      .output-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .output-title { color: #fff; font-weight: 600; font-size: 14px; }
+      .copy-btn {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .copy-btn:hover { background: rgba(255, 255, 255, 0.25); }
+      #jsonEditor { width: 100%; height: 400px; min-height: 300px; border-radius: 6px; overflow: hidden; }
+      details summary { cursor: pointer; color: #667eea; margin-bottom: 1rem; font-size: 14px; }
+      .footer { text-align: center; margin-top: 2rem; color: #999; font-size: 12px; }
+      .back-link { display: inline-block; margin-bottom: 1rem; color: #667eea; text-decoration: none; font-size: 14px; }
+      .back-link:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="/" class="back-link">← 返回文档</a>
+      
+      <div class="header">
+        <div class="logo">mcloud-sign 配置生成器</div>
+        <p class="subtitle">表单与 JSON 双向绑定，实时同步</p>
+      </div>
+      
+      <div id="accountsList"></div>
+      
+      <div class="btn-group">
+        <button class="btn" id="addAccountBtn">+ 添加账号</button>
+      </div>
+      
+      <div class="output-section">
+        <div class="output-header">
+          <span class="output-title">asign.json <span id="accountCount" style="font-size:12px;font-weight:normal;color:#aaa;"></span></span>
+          <button class="copy-btn" id="copyBtn">复制配置</button>
+        </div>
+        <div id="jsonEditor"></div>
+      </div>
+      
+      <p class="footer">mcloud-sign 配置生成器</p>
+    </div>
+    
+    <script is:inline src="/monaco-editor/vs/loader.js"></script>
+    <script is:inline>
+      var _editorReady = false;
+      require.config({ paths: { vs: '/monaco-editor/vs' } });
+      require(['vs/editor/editor.main'], function() {
+        monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+          validate: true,
+          allowComments: false,
+          schemas: [{
+            uri: 'http://mcloud-sign/asign.json',
+            fileMatch: ['*'],
+            schema: {
+              type: 'object',
+              properties: {
+                caiyun: {
+                  type: 'array',
+                  description: '账号配置列表',
+                  items: {
+                    type: 'object',
+                    required: ['auth'],
+                    properties: {
+                      auth: { type: 'string', description: 'authorization 值 (必填)' },
+                      nickname: { type: 'string', description: '昵称，用于区分多账号 (可选)' },
+                      shake: {
+                        type: 'object',
+                        description: '摇一摇配置',
+                        properties: {
+                          enable: { type: 'boolean', description: '是否开启摇一摇', default: true },
+                          num: { type: 'number', minimum: 0, maximum: 100, description: '摇一摇次数', default: 6 },
+                          delay: { type: 'number', minimum: 1, maximum: 60, description: '每次间隔时间(秒)', default: 2 }
+                        }
+                      },
+                      backupWaitTime: { type: 'number', minimum: 5, maximum: 120, description: '备份等待时间(秒)', default: 20 },
+                      tasks: {
+                        type: 'object',
+                        description: '任务配置',
+                        properties: {
+                          skipTasks: { type: 'array', items: { type: 'number' }, description: '跳过的任务ID列表' },
+                          '每月上传任务单日数量': { type: 'number', minimum: 1, maximum: 99, description: '每月上传任务单日数量', default: 5 }
+                        }
+                      },
+                      catalog: { type: 'string', description: '上传目录', default: '/' },
+                      '是否打印今日云朵': { type: 'boolean', description: '是否打印今日云朵统计', default: true },
+                      '剩余多少天刷新token': { type: 'number', minimum: 1, maximum: 30, description: '剩余多少天刷新token', default: 10 },
+                      '微信抽奖': {
+                        type: 'object',
+                        description: '微信抽奖配置',
+                        properties: {
+                          '次数': { type: 'number', minimum: 0, maximum: 50, description: '抽奖次数', default: 1 },
+                          '间隔': { type: 'number', minimum: 100, maximum: 5000, description: '抽奖间隔(毫秒)', default: 500 }
+                        }
+                      },
+                      'AI新头像': {
+                        type: 'object',
+                        description: 'AI新头像配置',
+                        properties: {
+                          '开启': { type: 'boolean', description: '是否开启AI新头像', default: false },
+                          '每日生成次数': { type: 'number', minimum: 1, maximum: 20, description: '每日生成次数', default: 5 }
+                        }
+                      },
+                      '红包派对': {
+                        type: 'object',
+                        description: '红包派对配置',
+                        properties: {
+                          '开启': { type: 'boolean', description: '是否开启红包派对', default: false }
+                        }
+                      },
+                      '云朵大作战': {
+                        type: 'object',
+                        description: '云朵大作战配置',
+                        properties: {
+                          '开启': { type: 'boolean', description: '是否开启云朵大作战', default: false },
+                          '目标排名': { type: 'number', minimum: 1, description: '目标排名', default: 500 },
+                          '开启兑换': { type: 'boolean', description: '是否开启兑换', default: false },
+                          '邀请用户': { type: 'array', items: { type: 'string' }, description: '邀请用户的手机号列表' },
+                          '游戏时间': { type: 'number', minimum: 60, maximum: 600, description: '游戏时间(秒)', default: 300 }
+                        }
+                      },
+                      '春日拍拍大作战': {
+                        type: 'object',
+                        description: '春日拍拍大作战配置',
+                        properties: {
+                          '开启': { type: 'boolean', description: '是否开启春日拍拍大作战', default: false }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        });
+
+        window._jsonEditor = monaco.editor.create(document.getElementById('jsonEditor'), {
+          value: '{\n  "caiyun": []\n}',
+          language: 'json',
+          theme: 'vs-dark',
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 2,
+          formatOnPaste: true,
+          formatOnType: true,
+          fontSize: 13,
+          lineNumbers: 'on',
+          renderLineHighlight: 'line',
+          bracketPairColorization: { enabled: true },
+          quickSuggestions: true,
+          suggestOnTriggerCharacters: true
+        });
+        _editorReady = true;
+        if (window._onEditorReady) window._onEditorReady();
+      });
+    </script>
+    <script is:inline src="/config-generator.js"></script>
+  </body>
+</html>

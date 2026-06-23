@@ -3,6 +3,10 @@ title: 配置详解
 description: mcloud-sign 配置文件格式与字段说明
 ---
 
+:::tip[配置生成器]
+不想手动编写配置？试试 [配置生成器](/config-generator)，通过表单快速生成 JSON 配置文件！
+:::
+
 ## 配置文件格式
 
 支持 JS 和 JSON 两种方式，放在项目根目录。
