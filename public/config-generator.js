@@ -1,4 +1,5 @@
 (function() {
+  var STORAGE_KEY = 'mcloud_sign_config';
   var accounts = [];
   var accountCounter = 0;
   var isUpdatingFromJSON = false;
@@ -43,6 +44,27 @@
 
   function hasValidAuth(account) {
     return account.auth && account.auth.trim().length > 0;
+  }
+
+  function saveToStorage() {
+    try {
+      var data = { accounts: accounts, counter: accountCounter };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function loadFromStorage() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      var data = JSON.parse(raw);
+      if (data.accounts && Array.isArray(data.accounts)) {
+        accounts = data.accounts;
+        accountCounter = data.counter || accounts.length;
+        return true;
+      }
+    } catch (e) {}
+    return false;
   }
 
   function updateAuthStatus(id) {
@@ -94,12 +116,14 @@
     accounts.push({ id: id, auth: '', nickname: '', config: getDefaultConfig() });
     renderAccounts();
     updateJSON();
+    saveToStorage();
   };
 
   window._removeAccount = function(id) {
     accounts = accounts.filter(function(a) { return a.id !== id; });
     renderAccounts();
     updateJSON();
+    saveToStorage();
   };
 
   window._updateAccount = function(id, field, value) {
@@ -110,6 +134,7 @@
       account[field] = value;
       if (field === 'auth') updateAuthStatus(id);
       updateJSON();
+      saveToStorage();
     }
     isUpdatingFromForm = false;
   };
@@ -127,6 +152,7 @@
     }
     obj[parts[parts.length - 1]] = value;
     updateJSON();
+    saveToStorage();
     isUpdatingFromForm = false;
   };
 
@@ -316,6 +342,7 @@
     });
     
     renderAccounts();
+    saveToStorage();
   }
 
   window._copyConfig = function() {
@@ -346,5 +373,10 @@
     window._onEditorReady = setupEditor;
   }
 
-  window._addAccount();
+  if (!loadFromStorage()) {
+    window._addAccount();
+  } else {
+    renderAccounts();
+    updateJSON();
+  }
 })();
