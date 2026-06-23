@@ -5,6 +5,20 @@
   var isUpdatingFromJSON = false;
   var isUpdatingFromForm = false;
   var isInitializing = true;
+  var messageConfig = {
+    title: '签到推送',
+    onlyError: false,
+    pushplus: { token: '' },
+    serverChan: { token: '' },
+    workWeixin: { corpid: '', corpsecret: '', agentid: '' },
+    workWeixinBot: { url: '' },
+    tgBot: { token: '', chat_id: '', proxy: '' },
+    bark: { key: '' },
+    dingTalk: { token: '', secret: '' },
+    email: { host: '', port: 465, from: '', pass: '', to: '' },
+    twoIm: { key: '', sid: '' },
+    customPost: { url: '', data: '' }
+  };
 
   function getDefaultConfig() {
     return {
@@ -49,7 +63,7 @@
 
   function saveToStorage() {
     try {
-      var data = { accounts: accounts, counter: accountCounter };
+      var data = { accounts: accounts, counter: accountCounter, message: messageConfig };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {}
   }
@@ -62,10 +76,112 @@
       if (data.accounts && Array.isArray(data.accounts)) {
         accounts = data.accounts;
         accountCounter = data.counter || accounts.length;
+        if (data.message) messageConfig = data.message;
         return true;
       }
     } catch (e) {}
     return false;
+  }
+
+  function updateMessageField(path, value) {
+    var parts = path.split('.');
+    var obj = messageConfig;
+    for (var i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = value;
+  }
+
+  function renderMessageForm() {
+    var container = document.getElementById('messageForm');
+    if (!container) return;
+    var m = messageConfig;
+    
+    var html = '<div class="section"><div class="section-title">推送配置</div>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>推送标题</label>';
+    html += '<input type="text" value="' + escapeHtml(m.title) + '" onchange="window._updateMsg(\'title\',this.value)" placeholder="签到推送"></div>';
+    html += '<div class="form-group"><label>仅错误推送</label>';
+    html += '<select onchange="window._updateMsg(\'onlyError\',this.value===\'true\')">';
+    html += '<option value="false"' + (!m.onlyError ? ' selected' : '') + '>否</option>';
+    html += '<option value="true"' + (m.onlyError ? ' selected' : '') + '>是</option></select></div>';
+    html += '</div>';
+    
+    html += '<details><summary>PushPlus</summary>';
+    html += '<div class="form-row full"><div class="form-group"><label>Token</label>';
+    html += '<input type="text" value="' + escapeHtml(m.pushplus.token) + '" onchange="window._updateMsg(\'pushplus.token\',this.value)" placeholder="pushplus token"></div></div></details>';
+    
+    html += '<details><summary>Server酱</summary>';
+    html += '<div class="form-row full"><div class="form-group"><label>Token</label>';
+    html += '<input type="text" value="' + escapeHtml(m.serverChan.token) + '" onchange="window._updateMsg(\'serverChan.token\',this.value)" placeholder="server chan token"></div></div></details>';
+    
+    html += '<details><summary>Bark</summary>';
+    html += '<div class="form-row full"><div class="form-group"><label>Key</label>';
+    html += '<input type="text" value="' + escapeHtml(m.bark.key) + '" onchange="window._updateMsg(\'bark.key\',this.value)" placeholder="bark key"></div></div></details>';
+    
+    html += '<details><summary>Telegram Bot</summary>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>Token</label>';
+    html += '<input type="text" value="' + escapeHtml(m.tgBot.token) + '" onchange="window._updateMsg(\'tgBot.token\',this.value)" placeholder="bot token"></div>';
+    html += '<div class="form-group"><label>Chat ID</label>';
+    html += '<input type="text" value="' + escapeHtml(m.tgBot.chat_id) + '" onchange="window._updateMsg(\'tgBot.chat_id\',this.value)" placeholder="chat id"></div>';
+    html += '</div></details>';
+    
+    html += '<details><summary>钉钉</summary>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>Token</label>';
+    html += '<input type="text" value="' + escapeHtml(m.dingTalk.token) + '" onchange="window._updateMsg(\'dingTalk.token\',this.value)" placeholder="dingtalk token"></div>';
+    html += '<div class="form-group"><label>Secret</label>';
+    html += '<input type="text" value="' + escapeHtml(m.dingTalk.secret) + '" onchange="window._updateMsg(\'dingTalk.secret\',this.value)" placeholder="dingtalk secret"></div>';
+    html += '</div></details>';
+    
+    html += '<details><summary>企业微信应用</summary>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>Corpid</label>';
+    html += '<input type="text" value="' + escapeHtml(m.workWeixin.corpid) + '" onchange="window._updateMsg(\'workWeixin.corpid\',this.value)"></div>';
+    html += '<div class="form-group"><label>Corpsecret</label>';
+    html += '<input type="text" value="' + escapeHtml(m.workWeixin.corpsecret) + '" onchange="window._updateMsg(\'workWeixin.corpsecret\',this.value)"></div>';
+    html += '</div>';
+    html += '<div class="form-row full"><div class="form-group"><label>Agentid</label>';
+    html += '<input type="text" value="' + escapeHtml(m.workWeixin.agentid) + '" onchange="window._updateMsg(\'workWeixin.agentid\',this.value)"></div></div></details>';
+    
+    html += '<details><summary>企业微信机器人</summary>';
+    html += '<div class="form-row full"><div class="form-group"><label>Webhook URL</label>';
+    html += '<input type="text" value="' + escapeHtml(m.workWeixinBot.url) + '" onchange="window._updateMsg(\'workWeixinBot.url\',this.value)" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"></div></div></details>';
+    
+    html += '<details><summary>邮件</summary>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>SMTP Host</label>';
+    html += '<input type="text" value="' + escapeHtml(m.email.host) + '" onchange="window._updateMsg(\'email.host\',this.value)" placeholder="smtp.qq.com"></div>';
+    html += '<div class="form-group"><label>Port</label>';
+    html += '<input type="number" value="' + m.email.port + '" onchange="window._updateMsg(\'email.port\',parseInt(this.value))"></div>';
+    html += '</div>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>发件人</label>';
+    html += '<input type="text" value="' + escapeHtml(m.email.from) + '" onchange="window._updateMsg(\'email.from\',this.value)"></div>';
+    html += '<div class="form-group"><label>密码/授权码</label>';
+    html += '<input type="password" value="' + escapeHtml(m.email.pass) + '" onchange="window._updateMsg(\'email.pass\',this.value)"></div>';
+    html += '</div>';
+    html += '<div class="form-row full"><div class="form-group"><label>收件人</label>';
+    html += '<input type="text" value="' + escapeHtml(m.email.to) + '" onchange="window._updateMsg(\'email.to\',this.value)"></div></div></details>';
+    
+    html += '<details><summary>TwoIm</summary>';
+    html += '<div class="form-row">';
+    html += '<div class="form-group"><label>Key</label>';
+    html += '<input type="text" value="' + escapeHtml(m.twoIm.key) + '" onchange="window._updateMsg(\'twoIm.key\',this.value)"></div>';
+    html += '<div class="form-group"><label>SID</label>';
+    html += '<input type="text" value="' + escapeHtml(m.twoIm.sid) + '" onchange="window._updateMsg(\'twoIm.sid\',this.value)"></div>';
+    html += '</div></details>';
+    
+    html += '<details><summary>自定义推送</summary>';
+    html += '<div class="form-row full"><div class="form-group"><label>URL</label>';
+    html += '<input type="text" value="' + escapeHtml(m.customPost.url) + '" onchange="window._updateMsg(\'customPost.url\',this.value)" placeholder="https://..."></div></div>';
+    html += '<div class="form-row full"><div class="form-group"><label>Data (JSON字符串)</label>';
+    html += '<input type="text" value="' + escapeHtml(m.customPost.data) + '" onchange="window._updateMsg(\'customPost.data\',this.value)"></div></div></details>';
+    
+    html += '</div>';
+    container.innerHTML = html;
   }
 
   function updateAuthStatus(id) {
@@ -111,6 +227,15 @@
       if (el) el.value = pair[1];
     });
   }
+
+  window._updateMsg = function(path, value) {
+    isUpdatingFromForm = true;
+    updateMessageField(path, value);
+    renderMessageForm();
+    updateJSON();
+    saveToStorage();
+    isUpdatingFromForm = false;
+  };
 
   window._addAccount = function() {
     isUpdatingFromForm = true;
@@ -293,6 +418,29 @@
       return result;
     })};
     
+    var hasMsg = messageConfig.title !== '签到推送' || messageConfig.onlyError || 
+      messageConfig.pushplus.token || messageConfig.serverChan.token ||
+      messageConfig.workWeixin.corpid || messageConfig.workWeixinBot.url ||
+      messageConfig.tgBot.token || messageConfig.bark.key ||
+      messageConfig.dingTalk.token || messageConfig.email.host ||
+      messageConfig.twoIm.key || messageConfig.customPost.url;
+    
+    if (hasMsg) {
+      config.message = {};
+      if (messageConfig.title !== '签到推送') config.message.title = messageConfig.title;
+      if (messageConfig.onlyError) config.message.onlyError = true;
+      if (messageConfig.pushplus.token) config.message.pushplus = { token: messageConfig.pushplus.token };
+      if (messageConfig.serverChan.token) config.message.serverChan = { token: messageConfig.serverChan.token };
+      if (messageConfig.workWeixin.corpid) config.message.workWeixin = { corpid: messageConfig.workWeixin.corpid, corpsecret: messageConfig.workWeixin.corpsecret, agentid: messageConfig.workWeixin.agentid };
+      if (messageConfig.workWeixinBot.url) config.message.workWeixinBot = { url: messageConfig.workWeixinBot.url };
+      if (messageConfig.tgBot.token) config.message.tgBot = { token: messageConfig.tgBot.token, chat_id: messageConfig.tgBot.chat_id };
+      if (messageConfig.bark.key) config.message.bark = { key: messageConfig.bark.key };
+      if (messageConfig.dingTalk.token) config.message.dingTalk = { token: messageConfig.dingTalk.token, secret: messageConfig.dingTalk.secret };
+      if (messageConfig.email.host) config.message.email = { host: messageConfig.email.host, port: messageConfig.email.port, from: messageConfig.email.from, pass: messageConfig.email.pass, to: messageConfig.email.to };
+      if (messageConfig.twoIm.key) config.message.twoIm = { key: messageConfig.twoIm.key, sid: messageConfig.twoIm.sid };
+      if (messageConfig.customPost.url) config.message.customPost = { url: messageConfig.customPost.url, data: messageConfig.customPost.data };
+    }
+    
     if (!isUpdatingFromJSON) {
       setEditorValue(JSON.stringify(config, null, 2));
     }
@@ -346,7 +494,24 @@
       });
     });
     
+    if (config.message) {
+      var msg = config.message;
+      if (msg.title) messageConfig.title = msg.title;
+      if (msg.onlyError !== undefined) messageConfig.onlyError = msg.onlyError;
+      if (msg.pushplus) messageConfig.pushplus = { token: msg.pushplus.token || '' };
+      if (msg.serverChan) messageConfig.serverChan = { token: msg.serverChan.token || '' };
+      if (msg.workWeixin) messageConfig.workWeixin = { corpid: msg.workWeixin.corpid || '', corpsecret: msg.workWeixin.corpsecret || '', agentid: msg.workWeixin.agentid || '' };
+      if (msg.workWeixinBot) messageConfig.workWeixinBot = { url: msg.workWeixinBot.url || '' };
+      if (msg.tgBot) messageConfig.tgBot = { token: msg.tgBot.token || '', chat_id: msg.tgBot.chat_id || '', proxy: msg.tgBot.proxy || '' };
+      if (msg.bark) messageConfig.bark = { key: msg.bark.key || '' };
+      if (msg.dingTalk) messageConfig.dingTalk = { token: msg.dingTalk.token || '', secret: msg.dingTalk.secret || '' };
+      if (msg.email) messageConfig.email = { host: msg.email.host || '', port: msg.email.port || 465, from: msg.email.from || '', pass: msg.email.pass || '', to: msg.email.to || '' };
+      if (msg.twoIm) messageConfig.twoIm = { key: msg.twoIm.key || '', sid: msg.twoIm.sid || '' };
+      if (msg.customPost) messageConfig.customPost = { url: msg.customPost.url || '', data: msg.customPost.data || '' };
+    }
+    
     renderAccounts();
+    renderMessageForm();
     saveToStorage();
   }
 
@@ -434,6 +599,7 @@
   } else {
     renderAccounts();
   }
+  renderMessageForm();
   
   isInitializing = false;
 })();
