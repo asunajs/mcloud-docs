@@ -360,11 +360,12 @@
   window._clearData = function() {
     if (!confirm('确定要清除所有配置数据吗？此操作不可恢复。')) return;
     localStorage.removeItem(STORAGE_KEY);
+    isUpdatingFromForm = true;
     accounts = [];
     accountCounter = 0;
     renderAccounts();
-    updateJSON();
     window._addAccount();
+    isUpdatingFromForm = false;
   };
 
   window._exportFile = function() {
