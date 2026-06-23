@@ -357,8 +357,54 @@
     });
   };
 
+  window._clearData = function() {
+    if (!confirm('确定要清除所有配置数据吗？此操作不可恢复。')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    accounts = [];
+    accountCounter = 0;
+    renderAccounts();
+    updateJSON();
+    window._addAccount();
+  };
+
+  window._exportFile = function() {
+    var text = getEditorValue() || '';
+    var blob = new Blob([text], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'asign.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window._importFile = function() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          var config = JSON.parse(ev.target.result);
+          importFromJSON(config);
+          setEditorValue(JSON.stringify(config, null, 2));
+        } catch (err) {
+          alert('JSON 解析失败: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   document.getElementById('addAccountBtn').addEventListener('click', window._addAccount);
   document.getElementById('copyBtn').addEventListener('click', window._copyConfig);
+  document.getElementById('clearBtn').addEventListener('click', window._clearData);
+  document.getElementById('exportBtn').addEventListener('click', window._exportFile);
+  document.getElementById('importFileBtn').addEventListener('click', window._importFile);
 
   function setupEditor() {
     if (window._jsonEditor) {
