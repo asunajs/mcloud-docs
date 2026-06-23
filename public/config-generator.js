@@ -4,6 +4,7 @@
   var accountCounter = 0;
   var isUpdatingFromJSON = false;
   var isUpdatingFromForm = false;
+  var isInitializing = true;
 
   function getDefaultConfig() {
     return {
@@ -299,7 +300,7 @@
   }
 
   function syncFromJSON() {
-    if (isUpdatingFromForm) return;
+    if (isUpdatingFromForm || isInitializing) return;
     isUpdatingFromJSON = true;
     
     var jsonStr = getEditorValue().trim();
@@ -369,14 +370,19 @@
 
   if (_editorReady) {
     setupEditor();
+    updateJSON();
   } else {
-    window._onEditorReady = setupEditor;
+    window._onEditorReady = function() {
+      setupEditor();
+      updateJSON();
+    };
   }
 
   if (!loadFromStorage()) {
     window._addAccount();
   } else {
     renderAccounts();
-    updateJSON();
   }
+  
+  isInitializing = false;
 })();
