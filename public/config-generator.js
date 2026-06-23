@@ -126,7 +126,9 @@
     html += '<input type="text" value="' + escapeHtml(m.tgBot.token) + '" onchange="window._updateMsg(\'tgBot.token\',this.value)" placeholder="bot token"></div>';
     html += '<div class="form-group"><label>Chat ID</label>';
     html += '<input type="text" value="' + escapeHtml(m.tgBot.chat_id) + '" onchange="window._updateMsg(\'tgBot.chat_id\',this.value)" placeholder="chat id"></div>';
-    html += '</div></details>';
+    html += '</div>';
+    html += '<div class="form-row full"><div class="form-group"><label>代理 (可选)</label>';
+    html += '<input type="text" value="' + escapeHtml(m.tgBot.proxy) + '" onchange="window._updateMsg(\'tgBot.proxy\',this.value)" placeholder="http://127.0.0.1:7890"></div></div></details>';
     
     html += '<details><summary>钉钉</summary>';
     html += '<div class="form-row">';
@@ -434,6 +436,7 @@
       if (messageConfig.workWeixin.corpid) config.message.workWeixin = { corpid: messageConfig.workWeixin.corpid, corpsecret: messageConfig.workWeixin.corpsecret, agentid: messageConfig.workWeixin.agentid };
       if (messageConfig.workWeixinBot.url) config.message.workWeixinBot = { url: messageConfig.workWeixinBot.url };
       if (messageConfig.tgBot.token) config.message.tgBot = { token: messageConfig.tgBot.token, chat_id: messageConfig.tgBot.chat_id };
+      if (messageConfig.tgBot.proxy) config.message.tgBot = config.message.tgBot || {}, config.message.tgBot.proxy = messageConfig.tgBot.proxy;
       if (messageConfig.bark.key) config.message.bark = { key: messageConfig.bark.key };
       if (messageConfig.dingTalk.token) config.message.dingTalk = { token: messageConfig.dingTalk.token, secret: messageConfig.dingTalk.secret };
       if (messageConfig.email.host) config.message.email = { host: messageConfig.email.host, port: messageConfig.email.port, from: messageConfig.email.from, pass: messageConfig.email.pass, to: messageConfig.email.to };
