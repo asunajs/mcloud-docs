@@ -83,3 +83,28 @@ description: 所有配置字段的详细说明
 | `sendMailTo` | `string` | `""` | 发邮件收件人 |
 | `sendMailSubject` | `string` | `""` | 邮件主题 |
 | `sendMailContent` | `string` | `""` | 邮件正文 |
+
+## 推送配置 (PushConfig)
+
+推送配置位于配置文件的 `message` 字段：
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `title` | `string` | `"签到推送"` | 推送标题 |
+| `onlyError` | `boolean` | `false` | 仅在有 error 日志时推送 |
+| `minLevel` | `string` | `"info"` | 推送日志级别：`"error"` / `"warn"` / `"info"` / `"debug"` |
+
+### 推送渠道配置
+
+| 渠道 | 配置字段 | 必填 |
+| --- | --- | --- |
+| PushPlus | `pushplus: { token }` | token |
+| Server酱 | `serverChan: { token }` | token |
+| 企业微信应用 | `workWeixin: { corpid, corpsecret, agentid }` | 全部 |
+| 企业微信机器人 | `workWeixinBot: { url }` | url |
+| Telegram | `tgBot: { token, chat_id }` | 全部 |
+| Bark | `bark: { key }` | key |
+| 钉钉 | `dingTalk: { token, secret? }` | token |
+| 邮件 | `email: { host, from, pass, to? }` | host, from, pass |
+| TwoIm | `twoIm: { key, sid }` | 全部 |
+| 自定义 POST | `customPost: { url, data? }` | url |

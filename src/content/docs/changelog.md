@@ -3,6 +3,13 @@ title: 更新日志
 description: 版本更新记录
 ---
 
+## v2.1.0
+
+- 新增推送日志级别配置（`minLevel`），支持 error/warn/info/debug 四级过滤
+- 推送邮件改为可选依赖（nodemailer），未安装时静默跳过
+- 优化红包派对日志输出，减少冗余信息
+- 修复 `fail` 级别日志从 warn 改为 info
+
 ## v2.0.0
 
 - 新增小红花领取功能（直播间口令兑换）

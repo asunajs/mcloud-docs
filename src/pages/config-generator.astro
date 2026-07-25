@@ -246,6 +246,22 @@ const { title = '配置生成器' } = Astro.props;
                       }
                     }
                   }
+                },
+                message: {
+                  type: 'object',
+                  description: '推送配置',
+                  properties: {
+                    title: { type: 'string', description: '推送标题', default: '签到推送' },
+                    onlyError: { type: 'boolean', description: '仅在有错误时推送', default: false },
+                    minLevel: { type: 'string', enum: ['error', 'warn', 'info', 'debug'], description: '推送日志级别', default: 'info' },
+                    pushplus: { type: 'object', properties: { token: { type: 'string', description: 'PushPlus token' } } },
+                    serverChan: { type: 'object', properties: { token: { type: 'string', description: 'Server酱 token' } } },
+                    workWeixinBot: { type: 'object', properties: { url: { type: 'string', description: '企业微信机器人 webhook' } } },
+                    tgBot: { type: 'object', properties: { token: { type: 'string', description: 'Telegram Bot token' }, chat_id: { type: 'string', description: 'Chat ID' } } },
+                    bark: { type: 'object', properties: { key: { type: 'string', description: 'Bark key' } } },
+                    dingTalk: { type: 'object', properties: { token: { type: 'string', description: '钉钉机器人 token' }, secret: { type: 'string', description: '签名密钥' } } },
+                    customPost: { type: 'object', properties: { url: { type: 'string', description: '自定义 POST URL' }, data: { type: 'object', description: '请求体' } } }
+                  }
                 }
               }
             }

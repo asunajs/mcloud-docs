@@ -8,6 +8,7 @@
   var messageConfig = {
     title: '签到推送',
     onlyError: false,
+    minLevel: 'info',
     pushplus: { token: '' },
     serverChan: { token: '' },
     workWeixin: { corpid: '', corpsecret: '', agentid: '' },
@@ -106,6 +107,12 @@
     html += '<select onchange="window._updateMsg(\'onlyError\',this.value===\'true\')">';
     html += '<option value="false"' + (!m.onlyError ? ' selected' : '') + '>否</option>';
     html += '<option value="true"' + (m.onlyError ? ' selected' : '') + '>是</option></select></div>';
+    html += '<div class="form-group"><label>推送日志级别</label>';
+    html += '<select onchange="window._updateMsg(\'minLevel\',this.value)">';
+    ['error', 'warn', 'info', 'debug'].forEach(function(lv) {
+      html += '<option value="' + lv + '"' + (m.minLevel === lv ? ' selected' : '') + '>' + lv + '</option>';
+    });
+    html += '</select></div>';
     html += '</div>';
     
     html += '<details><summary>PushPlus</summary>';
@@ -420,7 +427,7 @@
       return result;
     })};
     
-    var hasMsg = messageConfig.title !== '签到推送' || messageConfig.onlyError || 
+    var hasMsg = messageConfig.title !== '签到推送' || messageConfig.onlyError || messageConfig.minLevel !== 'info' ||
       messageConfig.pushplus.token || messageConfig.serverChan.token ||
       messageConfig.workWeixin.corpid || messageConfig.workWeixinBot.url ||
       messageConfig.tgBot.token || messageConfig.bark.key ||
@@ -431,6 +438,7 @@
       config.message = {};
       if (messageConfig.title !== '签到推送') config.message.title = messageConfig.title;
       if (messageConfig.onlyError) config.message.onlyError = true;
+      if (messageConfig.minLevel !== 'info') config.message.minLevel = messageConfig.minLevel;
       if (messageConfig.pushplus.token) config.message.pushplus = { token: messageConfig.pushplus.token };
       if (messageConfig.serverChan.token) config.message.serverChan = { token: messageConfig.serverChan.token };
       if (messageConfig.workWeixin.corpid) config.message.workWeixin = { corpid: messageConfig.workWeixin.corpid, corpsecret: messageConfig.workWeixin.corpsecret, agentid: messageConfig.workWeixin.agentid };
@@ -501,6 +509,7 @@
       var msg = config.message;
       if (msg.title) messageConfig.title = msg.title;
       if (msg.onlyError !== undefined) messageConfig.onlyError = msg.onlyError;
+      if (msg.minLevel) messageConfig.minLevel = msg.minLevel;
       if (msg.pushplus) messageConfig.pushplus = { token: msg.pushplus.token || '' };
       if (msg.serverChan) messageConfig.serverChan = { token: msg.serverChan.token || '' };
       if (msg.workWeixin) messageConfig.workWeixin = { corpid: msg.workWeixin.corpid || '', corpsecret: msg.workWeixin.corpsecret || '', agentid: msg.workWeixin.agentid || '' };

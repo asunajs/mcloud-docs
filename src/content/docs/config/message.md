@@ -11,10 +11,32 @@ description: 消息推送渠道配置
   "message": {
     "title": "签到推送",
     "onlyError": false,
+    "minLevel": "info",
     "pushplus": { "token": "你的token" }
   }
 }
 ```
+
+## 全局字段
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `title` | `string` | `"签到推送"` | 推送标题 |
+| `onlyError` | `boolean` | `false` | 仅在有 error 级别日志时才推送（即使为 false，无日志也不会推送） |
+| `minLevel` | `string` | `"info"` | 推送包含的日志级别，可选 `"error"` / `"warn"` / `"info"` / `"debug"` |
+
+### minLevel 说明
+
+控制推送到各渠道的日志内容包含哪些级别：
+
+| minLevel | 包含内容 |
+| --- | --- |
+| `"error"` | 仅 error / fail / fatal |
+| `"warn"` | warn 及以上 |
+| `"info"` | info / success / start / fail / warn / error（默认） |
+| `"debug"` | 全部日志 |
+
+例如只想推送错误信息：`{ "minLevel": "error" }`
 
 ## 支持的推送渠道
 
@@ -27,7 +49,7 @@ description: 消息推送渠道配置
 | Telegram | `tgBot: { token, chat_id, proxy? }` | Telegram Bot |
 | Bark | `bark: { key }` | iOS Bark |
 | 钉钉 | `dingTalk: { token, secret }` | 钉钉机器人 |
-| 邮件 | `email: { host, port, from, pass, to }` | SMTP 邮件 |
+| 邮件 | `email: { host, port, from, pass, to }` | SMTP 邮件（可选依赖，需安装 nodemailer） |
 | TwoIm | `twoIm: { key, sid }` | 回逍推送 |
 | 自定义 | `customPost: { url, data }` | 自定义 POST |
 
@@ -50,6 +72,16 @@ description: 消息推送渠道配置
 {
   "message": {
     "onlyError": true
+  }
+}
+```
+
+## 仅推送错误日志内容
+
+```json
+{
+  "message": {
+    "minLevel": "error"
   }
 }
 ```
