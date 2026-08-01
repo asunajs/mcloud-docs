@@ -1,57 +1,69 @@
 ---
-title: 技术栈
-description: 项目使用的技术栈
+title: 技术栈与架构
+description: mcloud-sign monorepo、依赖方向与双运行时设计
 ---
 
-## 核心技术
+## 技术栈
 
-| 类别 | 技术 | 说明 |
-| --- | --- | --- |
-| 运行时 | Node.js (ESM) | >= 18 |
-| 语言 | TypeScript 6.0+ | 类型安全 |
-| 构建 | tsup | 基于 esbuild 的 TypeScript 打包工具 |
-| Lint | oxlint | 超快的代码检查器 |
-| Format | oxfmt | 高性能格式化工具 |
-
-## 依赖库
-
-| 类别 | 库 | 说明 |
-| --- | --- | --- |
-| HTTP | ofetch | 基于 Fetch API 的轻量级 HTTP 客户端 |
-| 加密 | crypto-js | 加密工具 |
-| 图片处理 | fast-png | PNG 图片处理 |
-| 配置解析 | magicast | 配置文件解析 |
-| 日志 | consola | 日志输出 |
-| 存储 | unstorage | 存储抽象层 |
-| 工具库 | es-toolkit | 工具函数集 |
-| 日期 | dayjs | 日期处理 |
-| 配置合并 | defu | 配置合并工具 |
-| 序列化 | destr | 安全的 JSON 解析 |
-
-## 可选依赖
-
-| 库 | 说明 |
+| 类别 | 技术 |
 | --- | --- |
-| hpagent | HTTP/HTTPS 代理支持 |
-| nodemailer | 邮件发送 |
+| 语言 | TypeScript 6 |
+| 运行时 | Node.js 20+ / txiki.js |
+| 工作区 | npm workspaces |
+| 构建 | tsup / esbuild |
+| HTTP | ofetch |
+| WebSocket | Node.js 使用 `ws`，txiki.js 使用原生 WebSocket |
+| 协议 | SockJS + Protobuf |
+| 配置描述 | Valibot schema + 生成的类型和 JSON Schema |
+| 测试 | Vitest + Node/tjs 运行时对比测试 |
+| 质量工具 | oxlint / oxfmt / TypeScript |
 
-## 项目结构
+## Monorepo
 
-```
+```text
 mcloud-sign/
-├── src/
-│   ├── api/              # API 接口层
-│   ├── services/         # 业务服务层
-│   ├── types/            # TypeScript 类型定义
-│   ├── utils/            # 工具函数
-│   ├── constant/         # 常量配置
-│   ├── core.ts           # 核心逻辑
-│   └── index.ts          # 入口文件
-├── dist/                 # 构建产物（多文件）
-├── out/                  # 单文件发布版本
-├── package.json
-├── tsconfig.json
-├── tsup.config.ts        # tsup 构建配置
-├── asign.config.js       # 应用配置文件
-└── SECURITY.md           # 安全最佳实践
+├── packages/
+│   ├── runtime/   # Node.js / txiki.js 能力适配
+│   ├── shared/    # 配置、日志、HTTP、推送、工具
+│   ├── core/      # 业务任务、API 调用、直播协议
+│   ├── cli/       # 命令行和单文件入口
+│   └── api/       # API 服务入口
+├── scripts/       # 统一构建脚本
+├── test/          # 在线或集成诊断脚本
+└── tsup.config.ts # CLI 单文件构建
 ```
+
+## 依赖方向
+
+```text
+cli ─────┐
+         ├──> core ──> shared ──> runtime
+api ─────┘
+```
+
+- `runtime` 不依赖业务模块，负责跨运行时能力。
+- `shared` 提供配置、日志、HTTP、推送和通用工具。
+- `core` 实现账号初始化、签到、活动、直播口令和兑换。
+- `cli` / `api` 是组合与调度层。
+
+## Runtime Adapter
+
+`@asunajs/runtime` 统一以下差异：
+
+- 文件系统和路径。
+- Buffer 与文本编码。
+- 加密与随机字节。
+- WebSocket 事件和二进制消息。
+- 进程与运行环境信息。
+
+Node.js WebSocket 适配器包装 `ws`；txiki.js 使用原生 WebSocket，并将 `binaryType` 设为 `arraybuffer`，以便 Protobuf 解码得到一致的二进制输入。
+
+## 构建边界
+
+CLI 单文件会内联第三方运行依赖：
+
+- Node.js 版本只 externalize Node.js 内置模块。
+- txiki.js 版本只 externalize `tjs:*`。
+- SMTP 实现按构建目标替换：Node.js 使用真实实现，txiki.js 使用无操作适配。
+
+这种边界使产物可独立分发，同时避免把运行时本身已经提供的模块重复打包。

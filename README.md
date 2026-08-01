@@ -1,49 +1,55 @@
-# Starlight Starter Kit: Basics
+# mcloud-docs
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+`mcloud-sign` 的 Astro + Starlight 文档站，包含使用指南、配置参考、功能说明、技术文档和浏览器端配置生成器。
 
-```
-npm create astro@latest -- --template starlight
-```
+## 技术栈
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+- Astro 6
+- Starlight
+- Monaco Editor
+- Sharp
 
-## 🚀 Project Structure
+## 开发
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
-
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+```bash
+npm install
+npm run dev
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+本地默认地址为 `http://localhost:4321`。
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+## 构建与预览
 
-Static assets, like favicons, can be placed in the `public/` directory.
+```bash
+npm run build
+npm run preview
+```
 
-## 🧞 Commands
+静态产物生成到 `dist/`。
 
-All commands are run from the root of the project, from a terminal:
+## 目录
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```text
+src/content/docs/          # Markdown / MDX 文档
+src/pages/                 # 配置生成器和密码页
+src/components/starlight/  # Starlight 组件覆盖
+public/config-generator.js # 配置生成器逻辑
+public/config.schema.json  # Monaco 使用的配置 schema
+```
 
-## 👀 Want to learn more?
+## 同步原则
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+文档事实以 `mcloud-sign` 当前源码为准，尤其是：
+
+- `packages/shared/src/config/schema.ts`
+- `packages/shared/generated/defaults.ts`
+- `packages/shared/generated/config.schema.json`
+- `packages/cli/src/index.ts`
+- 根 `package.json` 与 `tsup.config.ts`
+- `TASKS.md`
+
+配置生成器的 schema 和默认值发生变化时，应与上述生成产物同步，避免生成错误配置。当前 `public/config.schema.json` 是主项目生成 schema 的同步副本，供 Monaco 诊断使用。
+
+## 访问门禁
+
+当前 `/password` 页面只通过客户端脚本和 `sessionStorage` 提供简单访问提示，不属于安全认证。若文档需要保护敏感内容，应在部署平台、反向代理或身份访问层实现真正的认证。

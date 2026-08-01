@@ -1,110 +1,60 @@
 ---
 title: 配置项说明
-description: 所有配置字段的详细说明
+description: mcloud-sign v2 当前配置字段
 ---
 
-## 账号配置项 (CaiyunConfig)
+## 顶层配置
 
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
-| --- | --- | --- | --- | --- |
-| `auth` | `string` | ✅ | - | Cookie authorization 字段，最少 10 字符 |
-| `nickname` | `string` | ❌ | - | 昵称（可选，便于多账号区分） |
-| `shake` | `ShakeConfig` | ❌ | `{ enable: true, num: 6, delay: 2 }` | 摇一摇配置 |
-| `backupWaitTime` | `number` | ❌ | `20` | 备份等待时间（秒），范围 5-120 |
-| `tasks` | `TasksConfig` | ❌ | `{ skipTasks: [], 每月上传任务单日数量: 5 }` | 任务配置 |
-| `catalog` | `string` | ❌ | `"/"` | 上传文件使用的目录 ID |
-| `是否打印今日云朵` | `boolean` | ❌ | `true` | 是否打印今日云朵统计 |
-| `剩余多少天刷新token` | `number` | ❌ | `10` | 剩余多少天刷新 token，范围 1-30 |
-| `微信抽奖` | `WechatDrawConfig` | ❌ | `{ 次数: 1, 间隔: 500 }` | 微信抽奖配置 |
-| `AI新头像` | `AINewAvatarConfig` | ❌ | `{ 开启: false, 每日生成次数: 5 }` | AI 新头像配置 |
-| `红包派对` | `RedPacketConfig` | ❌ | `{ 开启: true }` | 红包派对配置 |
-| `云朵大作战` | `CloudBattleConfig` | ❌ | `{ 开启: false, ... }` | 云朵大作战配置 |
-| `春日拍拍大作战` | `SpringBattleConfig` | ❌ | `{ 开启: false }` | 春日拍拍大作战配置 |
-| `文件获取方式` | `number` | ❌ | `1` | 文件获取方式，值为 `1` 或 `2` |
-| `mail139` | `Mail139Config` | ❌ | `{ aiChatMessage: "你好", ... }` | mail139 配置 |
-
-## 摇一摇配置 (ShakeConfig)
-
-| 字段 | 类型 | 默认值 | 范围 | 说明 |
-| --- | --- | --- | --- | --- |
-| `enable` | `boolean` | `true` | - | 是否开启摇一摇 |
-| `num` | `number` | `6` | 0-100 | 摇一摇次数 |
-| `delay` | `number` | `2` | 1-60 | 每次间隔时间（秒） |
-
-## 任务配置 (TasksConfig)
-
-| 字段 | 类型 | 默认值 | 范围 | 说明 |
-| --- | --- | --- | --- | --- |
-| `shareFile` | `string` | `undefined` | - | 分享任务默认使用的文件 ID |
-| `skipTasks` | `number[]` | `[]` | - | 跳过的任务 ID 列表 |
-| `每月上传任务单日数量` | `number` | `5` | 1-99 | 每月上传任务单日上传数量 |
-
-## 微信抽奖配置 (WechatDrawConfig)
-
-| 字段 | 类型 | 默认值 | 范围 | 说明 |
-| --- | --- | --- | --- | --- |
-| `次数` | `number` | `1` | 0-50 | 微信抽奖次数 |
-| `间隔` | `number` | `500` | 100-5000 | 微信抽奖间隔（毫秒） |
-
-## AI 新头像配置 (AINewAvatarConfig)
-
-| 字段 | 类型 | 默认值 | 范围 | 说明 |
-| --- | --- | --- | --- | --- |
-| `开启` | `boolean` | `false` | - | 是否开启 AI 新头像功能 |
-| `每日生成次数` | `number` | `5` | 1-20 | 每日生成次数 |
-
-## 红包派对配置 (RedPacketConfig)
-
-| 字段 | 类型 | 默认值 | 说明 |
+| 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `开启` | `boolean` | `true` | 是否开启红包派对任务 |
+| `version` | `2` | 是 | 配置版本，固定为 `2` |
+| `caiyun` | `AccountConfig[]` | 是 | 账号列表 |
+| `common` | `CommonConfig` | 否 | 所有账号共享的通用配置 |
+| `message` | `MessageConfig` | 否 | 运行结果推送配置 |
 
-## 云朵大作战配置 (CloudBattleConfig)
+## AccountConfig
 
-| 字段 | 类型 | 默认值 | 范围 | 说明 |
-| --- | --- | --- | --- | --- |
-| `开启` | `boolean` | `false` | - | 是否开启云朵大作战 |
-| `目标排名` | `number` | `500` | ≥1 | 目标排名 |
-| `开启兑换` | `boolean` | `false` | - | 是否开启兑换 |
-| `邀请用户` | `string[]` | `[]` | - | 邀请用户的手机号列表 |
-| `游戏时间` | `number` | `300` | 60-600 | 游戏时间（秒） |
-
-## 春日拍拍大作战配置 (SpringBattleConfig)
-
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `开启` | `boolean` | `false` | 是否开启春日拍拍大作战 |
-
-## mail139 配置 (Mail139Config)
-
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `aiChatMessage` | `string` | `"你好"` | AI 工作台对话内容 |
-| `sendMailTo` | `string` | `""` | 发邮件收件人 |
-| `sendMailSubject` | `string` | `""` | 邮件主题 |
-| `sendMailContent` | `string` | `""` | 邮件正文 |
-
-## 推送配置 (PushConfig)
-
-推送配置位于配置文件的 `message` 字段：
-
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `title` | `string` | `"签到推送"` | 推送标题 |
-| `onlyError` | `boolean` | `false` | 仅在有 error 日志时推送 |
-| `minLevel` | `string` | `"info"` | 推送日志级别：`"error"` / `"warn"` / `"info"` / `"debug"` |
-
-### 推送渠道配置
-
-| 渠道 | 配置字段 | 必填 |
+| 字段 | 默认值 | 说明 |
 | --- | --- | --- |
-| PushPlus | `pushplus: { token }` | token |
-| Server酱 | `serverChan: { token }` | token |
-| 企业微信应用 | `workWeixin: { corpid, corpsecret, agentid }` | 全部 |
-| 企业微信机器人 | `workWeixinBot: { url }` | url |
-| Telegram | `tgBot: { token, chat_id }` | 全部 |
-| Bark | `bark: { key }` | key |
-| 钉钉 | `dingTalk: { token, secret? }` | token |
-| 邮件 | `email: { host, from, pass, to? }` | host, from, pass |
-| TwoIm | `twoIm: { key, sid }` | 全部 |
-| 自定义 POST | `customPost: { url, data? }` | url |
+| `auth` | 无 | 必填，Base64 编码的认证字符串 |
+| `nickname` | 无 | 账号显示名称 |
+| `backupWaitTime` | `20` | 备份等待时间（秒） |
+| `tasks.skipTasks` | `[]` | 跳过的任务 ID |
+| `tasks.每月上传任务单日数量` | `5` | 月度上传任务单日完成数量 |
+| `是否打印今日云朵` | `true` | 是否输出今日云朵统计 |
+| `剩余多少天刷新token` | `10` | 提前多少天刷新认证 |
+| `AI新头像.开启` | `false` | 配置保留，当前业务未实现 |
+| `AI新头像.每日生成次数` | `10` | 每日生成次数配置 |
+| `红包派对.开启` | `true` | 是否执行红包派对 |
+| `云朵大作战.开启` | `false` | 是否执行云朵大作战 |
+| `云朵大作战.邀请用户` | `[]` | 邀请用户手机号列表 |
+| `云朵大作战.游戏时间` | `300` | 游戏时间（秒） |
+| `云朵大作战.目标排名` | `500` | 目标排名 |
+| `云朵大作战.开启兑换` | `false` | 是否启用活动内兑换 |
+| `春日拍拍大作战.开启` | `true` | 拍拍系列活动通用开关 |
+| `直播口令.开启` | `false` | 自动聚合口令并领取小红花 |
+| `mail139.aiChatMessage` | `"你好"` | AI 工作台对话内容 |
+| `mail139.sendMailTo` | `""` | 邮件任务收件人 |
+| `mail139.sendMailSubject` | `""` | 邮件主题 |
+| `mail139.sendMailContent` | `""` | 邮件正文 |
+
+## CommonConfig
+
+| 字段 | 默认值 | 说明 |
+| --- | --- | --- |
+| `backupWaitTime` | `20` | 账号未覆盖时使用的备份等待时间 |
+| `catalog` | `"/"` | 默认备份目录 |
+| `是否打印今日云朵` | `true` | 账号未覆盖时使用 |
+| `剩余多少天刷新token` | `10` | 账号未覆盖时使用 |
+| `colorize` | 自动检测 | 是否强制启用或关闭彩色输出 |
+
+最终账号配置按“内置默认值 → `common` → 当前账号配置”合并。
+
+## 当前功能边界
+
+- `春日拍拍大作战` 是配置兼容名称，实际对应拍拍系列活动的通用实现。
+- `直播口令` 开启后并行获取 WebSocket 与小红书主页来源，并在当前账号上下文领取。
+- `AI新头像` 仅有配置 schema，当前没有业务函数和 CLI 调度。
+- `signInWx`、`wxDraw`、`shakeTask` 已过期，不属于当前配置。
+
+消息字段见 [消息推送](/config/message)。机器可读 schema 也内置在 [配置生成器](/config-generator) 中，用于 Monaco 编辑提示。

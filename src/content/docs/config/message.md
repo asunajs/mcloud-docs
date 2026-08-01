@@ -1,87 +1,101 @@
 ---
 title: 消息推送
-description: 消息推送渠道配置
+description: 推送触发条件、内容过滤与渠道配置
 ---
 
-在配置文件的 `message` 字段中配置推送渠道：
+在顶层 `message` 字段配置推送：
 
 ```json
 {
-  "caiyun": [{ "auth": "..." }],
+  "version": 2,
+  "caiyun": [{ "auth": "认证信息" }],
   "message": {
-    "title": "签到推送",
+    "title": "mcloud-v2 运行推送",
     "onlyError": false,
     "minLevel": "info",
-    "pushplus": { "token": "你的token" }
+    "pushplus": { "token": "你的 token" }
   }
 }
 ```
 
 ## 全局字段
 
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `title` | `string` | `"签到推送"` | 推送标题 |
-| `onlyError` | `boolean` | `false` | 仅在有 error 级别日志时才推送（即使为 false，无日志也不会推送） |
-| `minLevel` | `string` | `"info"` | 推送包含的日志级别，可选 `"error"` / `"warn"` / `"info"` / `"debug"` |
-
-### minLevel 说明
-
-控制推送到各渠道的日志内容包含哪些级别：
-
-| minLevel | 包含内容 |
-| --- | --- |
-| `"error"` | 仅 error / fail / fatal |
-| `"warn"` | warn 及以上 |
-| `"info"` | info / success / start / fail / warn / error（默认） |
-| `"debug"` | 全部日志 |
-
-例如只想推送错误信息：`{ "minLevel": "error" }`
-
-## 支持的推送渠道
-
-| 渠道 | 配置字段 | 说明 |
+| 字段 | 默认值 | 说明 |
 | --- | --- | --- |
-| PushPlus | `pushplus: { token }` | [pushplus.plus](https://www.pushplus.plus/) |
-| Server酱 | `serverChan: { token }` | [sct.ftqq.com](https://sct.ftqq.com/) |
-| 企业微信应用 | `workWeixin: { corpid, corpsecret, agentid }` | 企业微信自建应用 |
-| 企业微信机器人 | `workWeixinBot: { url }` | 群机器人 webhook |
-| Telegram | `tgBot: { token, chat_id, proxy? }` | Telegram Bot |
-| Bark | `bark: { key }` | iOS Bark |
-| 钉钉 | `dingTalk: { token, secret }` | 钉钉机器人 |
-| 邮件 | `email: { host, port, from, pass, to }` | SMTP 邮件（可选依赖，需安装 nodemailer） |
-| TwoIm | `twoIm: { key, sid }` | 回逍推送 |
-| 自定义 | `customPost: { url, data }` | 自定义 POST |
+| `title` | `"mcloud-v2 运行推送"` | 推送标题 |
+| `onlyError` | `false` | 只有出现 `error` 类型日志时才发送 |
+| `minLevel` | `"info"` | 控制推送正文收录哪些日志类型 |
 
-## 多渠道推送
+### onlyError 与 fail
+
+`error` / `fatal` 表示运行错误；`fail` 是 info 级业务结果。
+
+- `fail` 不影响 CLI 退出码。
+- `fail` 不会触发 `onlyError`。
+- `minLevel: "error"` 的内容过滤会收录映射到最低过滤组的 `error`、`fatal` 和 `fail`，但这不会改变 `fail` 的业务语义。
+
+## minLevel
+
+| 值 | 推送正文包含内容 |
+| --- | --- |
+| `error` | `error`、`fatal`，以及业务结果类型 `fail` |
+| `warn` | 上述内容及 `warn` |
+| `info` | 上述内容及 `info`、`success`、`start`（默认） |
+| `debug` | 全部日志 |
+
+`onlyError` 决定是否发送，`minLevel` 决定发送时正文包含哪些内容，两者职责不同。
+
+## 支持渠道
+
+| 渠道 | 配置字段 | 必填字段 |
+| --- | --- | --- |
+| PushPlus | `pushplus` | `token` |
+| Server酱 | `serverChan` | `token` |
+| 企业微信应用 | `workWeixin` | `corpid`、`corpsecret` |
+| 企业微信机器人 | `workWeixinBot` | `url` |
+| Telegram | `tgBot` | `token`、`chat_id`；可选 `apiHost` |
+| Bark | `bark` | `key`；可选 `level` |
+| 钉钉 | `dingTalk` | `token`；可选 `secret` |
+| SMTP 邮件 | `email` | `host`、`from`、`pass` |
+| 回逍 | `twoIm` | `key`、`sid` |
+| 自定义请求 | `customPost` | `url`；支持单个对象或数组 |
+
+:::note[运行时差异]
+SMTP 邮件推送只在 Node.js 运行时执行。txiki.js 构建使用无操作邮件适配，其他 HTTP 推送渠道不受此限制。
+:::
+
+## Telegram 示例
 
 ```json
 {
   "message": {
-    "title": "签到推送",
-    "pushplus": { "token": "xxx" },
-    "tgBot": { "token": "xxx", "chat_id": "xxx" },
-    "bark": { "key": "xxx" }
+    "tgBot": {
+      "token": "bot token",
+      "chat_id": "chat id",
+      "apiHost": "api.telegram.org"
+    }
   }
 }
 ```
 
-## 仅错误推送
+## 自定义请求
 
 ```json
 {
   "message": {
-    "onlyError": true
+    "customPost": {
+      "url": "https://example.com/notify",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer ..."
+      },
+      "data": {
+        "title": "{title}",
+        "content": "{text}"
+      }
+    }
   }
 }
 ```
 
-## 仅推送错误日志内容
-
-```json
-{
-  "message": {
-    "minLevel": "error"
-  }
-}
-```
+`url` 和 `data` 支持 `{title}`、`{text}` 占位符。认证 token、Webhook、邮箱授权码等均属于敏感配置，不应提交到版本控制。

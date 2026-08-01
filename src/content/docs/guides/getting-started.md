@@ -5,86 +5,101 @@ description: 安装、配置和运行 mcloud-sign
 
 ## 环境要求
 
-- Node.js >= 18
-- npm / yarn / pnpm
+从源码开发或构建需要：
 
-## 安装
+- Node.js >= 20
+- npm >= 10
 
-### 方式一：使用编译后的单文件（推荐）
+运行发布产物时，根据产物选择 Node.js 或 txiki.js。
 
-1. 下载编译后的单文件 `index.mjs`，放在你的项目目录中
-2. 安装可选依赖（如需代理或邮件推送）：
-
-```bash
-# hpagent（代理支持，可选）
-npm install hpagent
-
-# nodemailer（邮件推送，可选）
-npm install nodemailer
-```
-
-### 方式二：从源码构建
+## 安装与构建
 
 ```bash
 git clone https://github.com/catlair/mcloud-sign.git
 cd mcloud-sign
 npm install
-npm run build:bundle
+
+# 构建 Node.js 单文件
+npm run build:cli
+
+# 构建 txiki.js 单文件
+npm run build:cli:tjs
 ```
 
-产物在 `out/index.mjs`，复制出来即可使用。
+产物位于：
 
-## 配置
+- `out/index.node.mjs`：Node.js 版本。
+- `out/index.tjs.mjs`：txiki.js 版本。
 
-在同级目录创建 `asign.json`（或 `asign.config.js`）：
+两个 CLI 产物都会内联第三方运行依赖。Node.js 版本仅保留 Node.js 内置模块为 external；txiki.js 版本仅保留运行时提供的 `tjs:*` 模块为 external。
+
+:::note
+仓库根目录的 `npm run build` 会构建全部 workspaces，不等同于仅生成发布用 CLI 单文件。
+:::
+
+## 创建配置
+
+推荐使用 [配置生成器](/config-generator)，或者在运行目录创建 `asign.json`：
 
 ```json
 {
+  "version": 2,
   "caiyun": [
     {
-      "auth": "你的auth字符串"
+      "auth": "Base64 编码的认证字符串",
+      "nickname": "主账号"
     }
   ]
 }
 ```
 
-### 如何获取 auth
+`version` 固定为 `2`，`caiyun` 是账号数组，每个账号必须提供 `auth`。
 
-1. 登录 [移动云盘网页版](https://m.mcloud.139.com)
-2. 打开浏览器开发者工具 → Network
-3. 找到任意请求，复制请求头中的 `authorization` 字段值
+### 获取 auth
+
+1. 登录移动云盘网页或 App 对应页面。
+2. 在浏览器开发者工具的 Network 面板中查看请求。
+3. 复制请求头中的 `authorization` 完整值。
+4. 将它写入本地配置；不要提交到 Git，也不要粘贴到公开日志或问题反馈中。
 
 ## 运行
 
+### 开发模式
+
 ```bash
-node index.mjs
+npm run dev:cli
 ```
 
-或创建一个入口脚本：
+### Node.js 单文件
+
+```bash
+node out/index.node.mjs
+```
+
+### 编程调用
 
 ```javascript
-import { run } from "./index.mjs";
+import { run } from "./out/index.node.mjs";
+
 await run();
+// 或指定配置文件
+await run("/absolute/path/to/asign.json");
 ```
 
-## 执行顺序
+`run` 仅接受可选的配置文件路径，不接受配置对象。
 
-运行后会自动执行以下任务：
+## 默认执行流程
 
-1. `signIn` — 每日签到
-2. `revivalRewardTask` — 复活奖励
-3. `taskExpansionTask` — 备份翻倍
-4. `signInWx` — 微信签到
-5. `wxDraw` — 微信抽奖
-6. `appTask` — 应用任务（上传、分享等）
-7. `shakeTask` — 摇一摇（需配置开启）
-8. `msgPushOnTask` — 消息推送奖励
-9. `noticeTask` — 通知奖励（短信/邮箱通知）
-10. `backupGiftTask` — 备份好礼
-11. `aiAvatarTask` — AI 新头像（需配置开启）
-12. `hc1tTask` — 云朵大作战（需配置开启）
-13. `playAiSpecialTask` — 春日拍拍（需配置开启）
-14. `redPacketTask` — 红包派对（默认开启）
-15. `receive` — 领取云朵
-16. `printPendingPrizes` — 打印待领取奖品
-17. `afterTask` — 后续处理
+每个账号会独立初始化并依次执行：
+
+1. 网盘签到、复活奖励和任务扩展。
+2. 拍拍系列活动、趣玩 AI 抽奖、红包派对、直播口令等按配置或当前实现调度的活动。
+3. 消息推送奖励、通知奖励、备份礼物和 App 任务。
+4. 云朵大作战（按配置）。
+5. 待领取奖品、领取云朵和临时文件清理。
+
+:::caution[已过期功能]
+微信签到 `signInWx`、微信抽奖 `wxDraw` 和摇一摇 `shakeTask` 已过期，不在当前 CLI 中执行，也不应继续配置。
+:::
+
+下一步可阅读 [配置详解](/guides/configuration) 和 [部署](/guides/deployment)。

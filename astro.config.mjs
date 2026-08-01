@@ -12,7 +12,7 @@ export default defineConfig({
 				alt: 'mcloud-sign Logo',
 			},
 			social: [
-				{ icon: 'github', label: 'GitHub', href: 'https://github.com/asunajs/mcloud-docs' },
+				{ icon: 'github', label: 'GitHub', href: 'https://github.com/catlair/mcloud-sign' },
 			],
 			components: {
 				Head: './src/components/starlight/Head.astro',

@@ -1,38 +1,42 @@
 ---
 title: mcloud-sign
-description: 移动云盘自动签到工具 - 自动完成每日签到、领取奖励、参与活动
+description: 支持 Node.js 与 txiki.js 的移动云盘自动签到和任务执行工具
 template: splash
 hero:
-  tagline: 一个用于中国移动云盘的自动化签到与任务执行工具
+  tagline: 多账号、任务自动化、直播口令与消息推送，一份配置即可运行
   actions:
     - text: 快速开始
       link: /guides/getting-started
       icon: right-arrow
-    - text: 在 GitHub 上查看
-      link: https://github.com/asunajs/mcloud-docs
-      icon: external
+    - text: 生成配置
+      link: /config-generator
+      icon: document
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-	<Card title="自动签到" icon="star">
-		每日自动登录并完成签到任务，无需手动操作
+	<Card title="签到与日常任务" icon="star">
+		执行每日签到、复活奖励、任务扩展、通知奖励、备份礼物和 App 任务。
 	</Card>
-	<Card title="多任务支持" icon="puzzle">
-		红包领取、文件备份、花园种植、盲盒抽奖等
+	<Card title="直播口令" icon="comment">
+		按配置并行获取 WebSocket 与小红书主页口令，合并去重后领取小红花。
+	</Card>
+	<Card title="活动与兑换" icon="puzzle">
+		支持红包派对、云朵大作战、拍拍系列活动、兑换列表和独立兑换。
+	</Card>
+	<Card title="多账号" icon="seti:user">
+		账号按顺序执行，任务状态和认证信息在账号上下文中隔离。
 	</Card>
 	<Card title="消息推送" icon="bell">
-		支持 PushPlus、Server酱、企业微信等多种推送方式
+		支持 PushPlus、Server酱、企业微信、Telegram、Bark、钉钉、邮件等渠道。
 	</Card>
-	<Card title="多账号管理" icon="seti:user">
-		支持同时管理多个账号，轻松切换
-	</Card>
-	<Card title="类型安全" icon="seti:typescript">
-		基于 TypeScript 构建，提供完整的类型检查
-	</Card>
-	<Card title="高性能" icon="rocket">
-		使用 oxc 工具链和 tsup 构建系统
+	<Card title="双运行时" icon="rocket">
+		提供 Node.js 与 txiki.js 单文件构建，第三方运行依赖内联到产物。
 	</Card>
 </CardGrid>
+
+:::note[当前实现范围]
+微信签到、微信抽奖和摇一摇已经过期，不再实现。`AI新头像` 配置仍保留，但业务函数和 CLI 调度尚未实现。
+:::

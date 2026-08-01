@@ -1,617 +1,409 @@
 (function() {
-  var STORAGE_KEY = 'mcloud_sign_config';
-  var accounts = [];
-  var accountCounter = 0;
-  var isUpdatingFromJSON = false;
-  var isUpdatingFromForm = false;
-  var isInitializing = true;
-  var messageConfig = {
-    title: '签到推送',
-    onlyError: false,
-    minLevel: 'info',
-    pushplus: { token: '' },
-    serverChan: { token: '' },
-    workWeixin: { corpid: '', corpsecret: '', agentid: '' },
-    workWeixinBot: { url: '' },
-    tgBot: { token: '', chat_id: '', proxy: '' },
-    bark: { key: '' },
-    dingTalk: { token: '', secret: '' },
-    email: { host: '', port: 465, from: '', pass: '', to: '' },
-    twoIm: { key: '', sid: '' },
-    customPost: { url: '', data: '' }
+  var STORAGE_KEY = 'mcloud_sign_config_v2';
+  var state = {
+    common: {},
+    accounts: [],
+    message: {}
   };
+  var editorReady = false;
+  var updatingEditor = false;
+  var nextAccountId = 0;
 
-  function getDefaultConfig() {
+  function defaultAccount() {
     return {
-      shake: { enable: true, num: 6, delay: 2 },
+      id: ++nextAccountId,
+      auth: '',
+      nickname: '',
       backupWaitTime: 20,
       tasks: { skipTasks: [], '每月上传任务单日数量': 5 },
-      catalog: '/',
       '是否打印今日云朵': true,
       '剩余多少天刷新token': 10,
-      '微信抽奖': { '次数': 1, '间隔': 500 },
-      'AI新头像': { '开启': false, '每日生成次数': 5 },
-      '红包派对': { '开启': false },
-      '云朵大作战': { '开启': false, '目标排名': 500, '开启兑换': false, '邀请用户': [], '游戏时间': 300 },
-      '春日拍拍大作战': { '开启': false }
+      'AI新头像': { '开启': false, '每日生成次数': 10 },
+      '红包派对': { '开启': true },
+      '云朵大作战': {
+        '开启': false,
+        '邀请用户': [],
+        '游戏时间': 300,
+        '目标排名': 500,
+        '开启兑换': false
+      },
+      '春日拍拍大作战': { '开启': true },
+      '直播口令': { '开启': false },
+      mail139: {
+        aiChatMessage: '你好',
+        sendMailTo: '',
+        sendMailSubject: '',
+        sendMailContent: ''
+      }
     };
   }
 
-  function mergeConfig(defaults, user) {
-    var result = {};
-    for (var key in defaults) {
-      if (user && user.hasOwnProperty(key)) {
-        if (typeof defaults[key] === 'object' && defaults[key] !== null && !Array.isArray(defaults[key])) {
-          result[key] = mergeConfig(defaults[key], user[key] || {});
-        } else {
-          result[key] = user[key];
-        }
+  function defaultMessage() {
+    return {
+      title: 'mcloud-v2 运行推送',
+      onlyError: false,
+      minLevel: 'info',
+      pushplus: { token: '' },
+      serverChan: { token: '' },
+      workWeixin: { corpid: '', corpsecret: '', agentid: '', touser: '@all', msgtype: 'text' },
+      workWeixinBot: { url: '', msgtype: 'text' },
+      tgBot: { token: '', chat_id: '', apiHost: 'api.telegram.org' },
+      bark: { key: '', level: 'passive' },
+      dingTalk: { token: '', secret: '' },
+      email: { host: '', port: 465, from: '', pass: '', to: '' },
+      twoIm: { key: '', sid: '', msgtype: 'text' },
+      customPost: { url: '', method: 'POST', headers: '{}', data: '{}' }
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function merge(defaults, value) {
+    var result = clone(defaults);
+    if (!value || typeof value !== 'object') return result;
+    Object.keys(value).forEach(function(key) {
+      if (value[key] && typeof value[key] === 'object' && !Array.isArray(value[key]) && result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+        result[key] = merge(result[key], value[key]);
       } else {
-        result[key] = defaults[key];
+        result[key] = value[key];
       }
-    }
+    });
     return result;
   }
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function getPath(object, path) {
+    return path.split('.').reduce(function(current, key) { return current && current[key]; }, object);
   }
 
-  function hasValidAuth(account) {
-    return account.auth && account.auth.trim().length > 0;
-  }
-
-  function saveToStorage() {
-    try {
-      var data = { accounts: accounts, counter: accountCounter, message: messageConfig };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
-  }
-
-  function loadFromStorage() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      var data = JSON.parse(raw);
-      if (data.accounts && Array.isArray(data.accounts)) {
-        accounts = data.accounts;
-        accountCounter = data.counter || accounts.length;
-        if (data.message) messageConfig = data.message;
-        return true;
-      }
-    } catch (e) {}
-    return false;
-  }
-
-  function updateMessageField(path, value) {
+  function setPath(object, path, value) {
     var parts = path.split('.');
-    var obj = messageConfig;
-    for (var i = 0; i < parts.length - 1; i++) {
-      if (!obj[parts[i]]) obj[parts[i]] = {};
-      obj = obj[parts[i]];
-    }
-    obj[parts[parts.length - 1]] = value;
-  }
-
-  function renderMessageForm() {
-    var container = document.getElementById('messageForm');
-    if (!container) return;
-    var m = messageConfig;
-    
-    var html = '<div class="section"><div class="section-title">推送配置</div>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>推送标题</label>';
-    html += '<input type="text" value="' + escapeHtml(m.title) + '" onchange="window._updateMsg(\'title\',this.value)" placeholder="签到推送"></div>';
-    html += '<div class="form-group"><label>仅错误推送</label>';
-    html += '<select onchange="window._updateMsg(\'onlyError\',this.value===\'true\')">';
-    html += '<option value="false"' + (!m.onlyError ? ' selected' : '') + '>否</option>';
-    html += '<option value="true"' + (m.onlyError ? ' selected' : '') + '>是</option></select></div>';
-    html += '<div class="form-group"><label>推送日志级别</label>';
-    html += '<select onchange="window._updateMsg(\'minLevel\',this.value)">';
-    ['error', 'warn', 'info', 'debug'].forEach(function(lv) {
-      html += '<option value="' + lv + '"' + (m.minLevel === lv ? ' selected' : '') + '>' + lv + '</option>';
+    var current = object;
+    parts.slice(0, -1).forEach(function(key) {
+      if (!current[key] || typeof current[key] !== 'object') current[key] = {};
+      current = current[key];
     });
-    html += '</select></div>';
-    html += '</div>';
-    
-    html += '<details><summary>PushPlus</summary>';
-    html += '<div class="form-row full"><div class="form-group"><label>Token</label>';
-    html += '<input type="text" value="' + escapeHtml(m.pushplus.token) + '" onchange="window._updateMsg(\'pushplus.token\',this.value)" placeholder="pushplus token"></div></div></details>';
-    
-    html += '<details><summary>Server酱</summary>';
-    html += '<div class="form-row full"><div class="form-group"><label>Token</label>';
-    html += '<input type="text" value="' + escapeHtml(m.serverChan.token) + '" onchange="window._updateMsg(\'serverChan.token\',this.value)" placeholder="server chan token"></div></div></details>';
-    
-    html += '<details><summary>Bark</summary>';
-    html += '<div class="form-row full"><div class="form-group"><label>Key</label>';
-    html += '<input type="text" value="' + escapeHtml(m.bark.key) + '" onchange="window._updateMsg(\'bark.key\',this.value)" placeholder="bark key"></div></div></details>';
-    
-    html += '<details><summary>Telegram Bot</summary>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>Token</label>';
-    html += '<input type="text" value="' + escapeHtml(m.tgBot.token) + '" onchange="window._updateMsg(\'tgBot.token\',this.value)" placeholder="bot token"></div>';
-    html += '<div class="form-group"><label>Chat ID</label>';
-    html += '<input type="text" value="' + escapeHtml(m.tgBot.chat_id) + '" onchange="window._updateMsg(\'tgBot.chat_id\',this.value)" placeholder="chat id"></div>';
-    html += '</div>';
-    html += '<div class="form-row full"><div class="form-group"><label>代理 (可选)</label>';
-    html += '<input type="text" value="' + escapeHtml(m.tgBot.proxy) + '" onchange="window._updateMsg(\'tgBot.proxy\',this.value)" placeholder="http://127.0.0.1:7890"></div></div></details>';
-    
-    html += '<details><summary>钉钉</summary>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>Token</label>';
-    html += '<input type="text" value="' + escapeHtml(m.dingTalk.token) + '" onchange="window._updateMsg(\'dingTalk.token\',this.value)" placeholder="dingtalk token"></div>';
-    html += '<div class="form-group"><label>Secret</label>';
-    html += '<input type="text" value="' + escapeHtml(m.dingTalk.secret) + '" onchange="window._updateMsg(\'dingTalk.secret\',this.value)" placeholder="dingtalk secret"></div>';
-    html += '</div></details>';
-    
-    html += '<details><summary>企业微信应用</summary>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>Corpid</label>';
-    html += '<input type="text" value="' + escapeHtml(m.workWeixin.corpid) + '" onchange="window._updateMsg(\'workWeixin.corpid\',this.value)"></div>';
-    html += '<div class="form-group"><label>Corpsecret</label>';
-    html += '<input type="text" value="' + escapeHtml(m.workWeixin.corpsecret) + '" onchange="window._updateMsg(\'workWeixin.corpsecret\',this.value)"></div>';
-    html += '</div>';
-    html += '<div class="form-row full"><div class="form-group"><label>Agentid</label>';
-    html += '<input type="text" value="' + escapeHtml(m.workWeixin.agentid) + '" onchange="window._updateMsg(\'workWeixin.agentid\',this.value)"></div></div></details>';
-    
-    html += '<details><summary>企业微信机器人</summary>';
-    html += '<div class="form-row full"><div class="form-group"><label>Webhook URL</label>';
-    html += '<input type="text" value="' + escapeHtml(m.workWeixinBot.url) + '" onchange="window._updateMsg(\'workWeixinBot.url\',this.value)" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"></div></div></details>';
-    
-    html += '<details><summary>邮件</summary>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>SMTP Host</label>';
-    html += '<input type="text" value="' + escapeHtml(m.email.host) + '" onchange="window._updateMsg(\'email.host\',this.value)" placeholder="smtp.qq.com"></div>';
-    html += '<div class="form-group"><label>Port</label>';
-    html += '<input type="number" value="' + m.email.port + '" onchange="window._updateMsg(\'email.port\',parseInt(this.value))"></div>';
-    html += '</div>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>发件人</label>';
-    html += '<input type="text" value="' + escapeHtml(m.email.from) + '" onchange="window._updateMsg(\'email.from\',this.value)"></div>';
-    html += '<div class="form-group"><label>密码/授权码</label>';
-    html += '<input type="password" value="' + escapeHtml(m.email.pass) + '" onchange="window._updateMsg(\'email.pass\',this.value)"></div>';
-    html += '</div>';
-    html += '<div class="form-row full"><div class="form-group"><label>收件人</label>';
-    html += '<input type="text" value="' + escapeHtml(m.email.to) + '" onchange="window._updateMsg(\'email.to\',this.value)"></div></div></details>';
-    
-    html += '<details><summary>TwoIm</summary>';
-    html += '<div class="form-row">';
-    html += '<div class="form-group"><label>Key</label>';
-    html += '<input type="text" value="' + escapeHtml(m.twoIm.key) + '" onchange="window._updateMsg(\'twoIm.key\',this.value)"></div>';
-    html += '<div class="form-group"><label>SID</label>';
-    html += '<input type="text" value="' + escapeHtml(m.twoIm.sid) + '" onchange="window._updateMsg(\'twoIm.sid\',this.value)"></div>';
-    html += '</div></details>';
-    
-    html += '<details><summary>自定义推送</summary>';
-    html += '<div class="form-row full"><div class="form-group"><label>URL</label>';
-    html += '<input type="text" value="' + escapeHtml(m.customPost.url) + '" onchange="window._updateMsg(\'customPost.url\',this.value)" placeholder="https://..."></div></div>';
-    html += '<div class="form-row full"><div class="form-group"><label>Data (JSON字符串)</label>';
-    html += '<input type="text" value="' + escapeHtml(m.customPost.data) + '" onchange="window._updateMsg(\'customPost.data\',this.value)"></div></div></details>';
-    
-    html += '</div>';
-    container.innerHTML = html;
+    current[parts[parts.length - 1]] = value;
   }
 
-  function updateAuthStatus(id) {
-    var account = accounts.find(function(a) { return a.id === id; });
-    if (!account) return;
-    var el = document.getElementById('auth-status-' + id);
-    var input = document.getElementById('auth-' + id);
-    if (el) el.innerHTML = hasValidAuth(account) ? '' : ' <span style="color:#e53e3e;font-size:12px;">(未填写auth)</span>';
-    if (input) input.style.borderColor = account.auth ? '' : '#e53e3e';
-  }
-
-  function updateFormFromAccount(account) {
-    var authInput = document.getElementById('auth-' + account.id);
-    var nickInput = document.getElementById('nick-' + account.id);
-    if (authInput) {
-      authInput.value = account.auth;
-      authInput.style.borderColor = account.auth ? '' : '#e53e3e';
-    }
-    if (nickInput) nickInput.value = account.nickname;
-    updateAuthStatus(account.id);
-
-    var c = account.config;
-    var fields = [
-      ['shake-enable-' + account.id, c.shake.enable ? 'true' : 'false'],
-      ['shake-num-' + account.id, c.shake.num],
-      ['shake-delay-' + account.id, c.shake.delay],
-      ['tasks-upload-' + account.id, c.tasks['每月上传任务单日数量']],
-      ['tasks-skip-' + account.id, (c.tasks.skipTasks || []).join(',')],
-      ['lottery-num-' + account.id, c['微信抽奖']['次数']],
-      ['lottery-interval-' + account.id, c['微信抽奖']['间隔']],
-      ['avatar-enable-' + account.id, c['AI新头像']['开启'] ? 'true' : 'false'],
-      ['avatar-daily-' + account.id, c['AI新头像']['每日生成次数']],
-      ['redpacket-enable-' + account.id, c['红包派对']['开启'] ? 'true' : 'false'],
-      ['battle-enable-' + account.id, c['云朵大作战']['开启'] ? 'true' : 'false'],
-      ['battle-rank-' + account.id, c['云朵大作战']['目标排名']],
-      ['battle-exchange-' + account.id, c['云朵大作战']['开启兑换'] ? 'true' : 'false'],
-      ['battle-time-' + account.id, c['云朵大作战']['游戏时间']],
-      ['battle-invite-' + account.id, (c['云朵大作战']['邀请用户'] || []).join(',')],
-      ['spring-enable-' + account.id, c['春日拍拍大作战']['开启'] ? 'true' : 'false']
-    ];
-    fields.forEach(function(pair) {
-      var el = document.getElementById(pair[0]);
-      if (el) el.value = pair[1];
+  function compactObject(value) {
+    if (Array.isArray(value)) return value.map(compactObject);
+    if (!value || typeof value !== 'object') return value;
+    var result = {};
+    Object.keys(value).forEach(function(key) {
+      var item = compactObject(value[key]);
+      if (item === '' || item === undefined || item === null) return;
+      if (Array.isArray(item) && item.length === 0) return;
+      if (typeof item === 'object' && !Array.isArray(item) && Object.keys(item).length === 0) return;
+      result[key] = item;
     });
+    return result;
   }
 
-  window._updateMsg = function(path, value) {
-    isUpdatingFromForm = true;
-    updateMessageField(path, value);
-    renderMessageForm();
-    updateJSON();
-    saveToStorage();
-    isUpdatingFromForm = false;
-  };
+  function accountForOutput(account) {
+    var output = clone(account);
+    delete output.id;
+    return compactObject(output);
+  }
 
-  window._addAccount = function() {
-    isUpdatingFromForm = true;
-    var id = ++accountCounter;
-    accounts.push({ id: id, auth: '', nickname: '', config: getDefaultConfig() });
-    renderAccounts();
-    updateJSON();
-    saveToStorage();
-    isUpdatingFromForm = false;
-  };
+  function parseJsonObject(text) {
+    if (!String(text || '').trim()) return {};
+    var value = JSON.parse(text);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('必须是 JSON 对象');
+    return value;
+  }
 
-  window._removeAccount = function(id) {
-    isUpdatingFromForm = true;
-    accounts = accounts.filter(function(a) { return a.id !== id; });
-    renderAccounts();
-    updateJSON();
-    saveToStorage();
-    isUpdatingFromForm = false;
-  };
+  function buildConfig() {
+    var config = {
+      version: 2,
+      caiyun: state.accounts.filter(function(account) { return account.auth.trim(); }).map(accountForOutput)
+    };
+    var common = compactObject(state.common);
+    if (Object.keys(common).length) config.common = common;
 
-  window._updateAccount = function(id, field, value) {
-    if (isUpdatingFromJSON) return;
-    isUpdatingFromForm = true;
-    var account = accounts.find(function(a) { return a.id === id; });
-    if (account) {
-      account[field] = value;
-      if (field === 'auth') updateAuthStatus(id);
-      updateJSON();
-      saveToStorage();
+    var message = {};
+    var m = state.message;
+    if (m.title && m.title !== 'mcloud-v2 运行推送') message.title = m.title;
+    if (m.onlyError) message.onlyError = true;
+    if (m.minLevel && m.minLevel !== 'info') message.minLevel = m.minLevel;
+    if (m.pushplus.token) message.pushplus = { token: m.pushplus.token };
+    if (m.serverChan.token) message.serverChan = { token: m.serverChan.token };
+    if (m.workWeixin.corpid && m.workWeixin.corpsecret) {
+      message.workWeixin = compactObject({
+        corpid: m.workWeixin.corpid,
+        corpsecret: m.workWeixin.corpsecret,
+        agentid: m.workWeixin.agentid === '' ? undefined : Number(m.workWeixin.agentid),
+        touser: m.workWeixin.touser,
+        msgtype: m.workWeixin.msgtype
+      });
     }
-    isUpdatingFromForm = false;
-  };
-
-  window._updateConfig = function(id, path, value) {
-    if (isUpdatingFromJSON) return;
-    isUpdatingFromForm = true;
-    var account = accounts.find(function(a) { return a.id === id; });
-    if (!account) return;
-    var parts = path.split('.');
-    var obj = account.config;
-    for (var i = 0; i < parts.length - 1; i++) {
-      if (!obj[parts[i]]) obj[parts[i]] = {};
-      obj = obj[parts[i]];
+    if (m.workWeixinBot.url) message.workWeixinBot = compactObject(m.workWeixinBot);
+    if (m.tgBot.token && m.tgBot.chat_id !== '') message.tgBot = compactObject(m.tgBot);
+    if (m.bark.key) message.bark = compactObject(m.bark);
+    if (m.dingTalk.token) message.dingTalk = compactObject(m.dingTalk);
+    if (m.email.host && m.email.from && m.email.pass) message.email = compactObject(m.email);
+    if (m.twoIm.key && m.twoIm.sid) message.twoIm = compactObject(m.twoIm);
+    if (m.customPost.url) {
+      message.customPost = compactObject({
+        url: m.customPost.url,
+        method: m.customPost.method,
+        headers: parseJsonObject(m.customPost.headers),
+        data: parseJsonObject(m.customPost.data)
+      });
     }
-    obj[parts[parts.length - 1]] = value;
-    updateJSON();
-    saveToStorage();
-    isUpdatingFromForm = false;
-  };
+    if (Object.keys(message).length) config.message = message;
+    return config;
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function load() {
+    try {
+      var stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!stored) return false;
+      state.common = stored.common || {};
+      state.message = merge(defaultMessage(), stored.message || {});
+      state.accounts = (stored.accounts || []).map(function(account) {
+        var merged = merge(defaultAccount(), account);
+        merged.id = ++nextAccountId;
+        return merged;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function renderCommon() {
+    var c = state.common;
+    document.getElementById('commonForm').innerHTML =
+      '<div class="section-title">通用配置（覆盖所有账号默认值）</div>' +
+      '<div class="form-row">' +
+      field('备份等待时间（秒）', 'common', 'backupWaitTime', c.backupWaitTime == null ? '' : c.backupWaitTime, 'number') +
+      field('默认备份目录', 'common', 'catalog', c.catalog || '', 'text') +
+      selectField('打印今日云朵', 'common', '是否打印今日云朵', c['是否打印今日云朵'], [['', '自动'], ['true', '是'], ['false', '否']]) +
+      field('提前刷新 token（天）', 'common', '剩余多少天刷新token', c['剩余多少天刷新token'] == null ? '' : c['剩余多少天刷新token'], 'number') +
+      selectField('彩色输出', 'common', 'colorize', c.colorize, [['', '自动检测'], ['true', '开启'], ['false', '关闭']]) +
+      '</div>';
+  }
+
+  function field(label, scope, path, value, type, extra) {
+    return '<div class="form-group"><label>' + label + '</label><input type="' + (type || 'text') + '" value="' + escapeHtml(value) + '" ' + (extra || '') + ' onchange="window.mcloudSet(\'' + scope + '\',\'' + path + '\',this.value,\'' + (type || 'text') + '\')"></div>';
+  }
+
+  function textareaField(label, scope, path, value) {
+    return '<div class="form-group"><label>' + label + '</label><textarea onchange="window.mcloudSet(\'' + scope + '\',\'' + path + '\',this.value,\'text\')">' + escapeHtml(value) + '</textarea></div>';
+  }
+
+  function selectField(label, scope, path, value, options) {
+    var current = value === undefined ? '' : String(value);
+    return '<div class="form-group"><label>' + label + '</label><select onchange="window.mcloudSet(\'' + scope + '\',\'' + path + '\',this.value,\'select\')">' + options.map(function(option) {
+      return '<option value="' + option[0] + '"' + (current === option[0] ? ' selected' : '') + '>' + option[1] + '</option>';
+    }).join('') + '</select></div>';
+  }
 
   function renderAccounts() {
-    var container = document.getElementById('accountsList');
-    if (!container) return;
-    
-    var html = '';
-    for (var i = 0; i < accounts.length; i++) {
-      var a = accounts[i];
-      var c = a.config;
-      var authValid = hasValidAuth(a);
-      
-      html += '<div class="account-item">';
-      html += '<div class="account-header">';
-      html += '<span class="account-title">账号 ' + (i + 1) + '<span id="auth-status-' + a.id + '">' + (authValid ? '' : ' <span style="color:#e53e3e;font-size:12px;">(未填写auth)</span>') + '</span></span>';
-      html += '<button class="btn btn-danger btn-sm" onclick="window._removeAccount(' + a.id + ')">删除</button>';
-      html += '</div>';
-      
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>auth (必填)</label>';
-      html += '<input id="auth-' + a.id + '" type="text" value="' + escapeHtml(a.auth) + '" oninput="window._updateAccount(' + a.id + ',\'auth\',this.value)" placeholder="输入 authorization 值"' + (!a.auth ? ' style="border-color:#e53e3e;"' : '') + '></div>';
-      html += '<div class="form-group"><label>nickname (可选)</label>';
-      html += '<input id="nick-' + a.id + '" type="text" value="' + escapeHtml(a.nickname) + '" oninput="window._updateAccount(' + a.id + ',\'nickname\',this.value)" placeholder="用于区分多账号"></div>';
-      html += '</div>';
-      
-      html += '<details><summary>展开高级配置</summary>';
-      
-      html += '<div class="section"><div class="section-title">摇一摇配置</div>';
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>开启</label>';
-      html += '<select id="shake-enable-' + a.id + '" onchange="window._updateConfig(' + a.id + ',\'shake.enable\',this.value===\'true\')">';
-      html += '<option value="true"' + (c.shake.enable ? ' selected' : '') + '>开启</option>';
-      html += '<option value="false"' + (!c.shake.enable ? ' selected' : '') + '>关闭</option></select></div>';
-      html += '<div class="form-group"><label>次数 (0-100)</label>';
-      html += '<input id="shake-num-' + a.id + '" type="number" min="0" max="100" value="' + c.shake.num + '" oninput="window._updateConfig(' + a.id + ',\'shake.num\',parseInt(this.value))"></div>';
-      html += '</div>';
-      html += '<div class="form-row full"><div class="form-group"><label>间隔时间 (秒)</label>';
-      html += '<input id="shake-delay-' + a.id + '" type="number" min="1" max="60" value="' + c.shake.delay + '" oninput="window._updateConfig(' + a.id + ',\'shake.delay\',parseInt(this.value))"></div></div>';
-      html += '</div>';
-      
-      html += '<div class="section"><div class="section-title">任务配置</div>';
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>每月上传任务单日数量</label>';
-      html += '<input id="tasks-upload-' + a.id + '" type="number" min="1" max="99" value="' + c.tasks['每月上传任务单日数量'] + '" oninput="window._updateConfig(' + a.id + ',\'tasks.每月上传任务单日数量\',parseInt(this.value))"></div>';
-      html += '<div class="form-group"><label>跳过的任务ID (逗号分隔)</label>';
-      html += '<input id="tasks-skip-' + a.id + '" type="text" placeholder="如: 585,586" onchange="window._updateConfig(' + a.id + ',\'tasks.skipTasks\',this.value.split(\',\').filter(Boolean).map(Number))"></div>';
-      html += '</div></div>';
-      
-      html += '<div class="section"><div class="section-title">微信抽奖配置</div>';
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>次数 (0-50)</label>';
-      html += '<input id="lottery-num-' + a.id + '" type="number" min="0" max="50" value="' + c['微信抽奖']['次数'] + '" oninput="window._updateConfig(' + a.id + ',\'微信抽奖.次数\',parseInt(this.value))"></div>';
-      html += '<div class="form-group"><label>间隔 (毫秒)</label>';
-      html += '<input id="lottery-interval-' + a.id + '" type="number" min="100" max="5000" value="' + c['微信抽奖']['间隔'] + '" oninput="window._updateConfig(' + a.id + ',\'微信抽奖.间隔\',parseInt(this.value))"></div>';
-      html += '</div></div>';
-      
-      html += '<div class="section"><div class="section-title">AI新头像配置</div>';
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>开启</label>';
-      html += '<select id="avatar-enable-' + a.id + '" onchange="window._updateConfig(' + a.id + ',\'AI新头像.开启\',this.value===\'true\')">';
-      html += '<option value="false"' + (!c['AI新头像']['开启'] ? ' selected' : '') + '>关闭</option>';
-      html += '<option value="true"' + (c['AI新头像']['开启'] ? ' selected' : '') + '>开启</option></select></div>';
-      html += '<div class="form-group"><label>每日生成次数</label>';
-      html += '<input id="avatar-daily-' + a.id + '" type="number" min="1" max="20" value="' + c['AI新头像']['每日生成次数'] + '" oninput="window._updateConfig(' + a.id + ',\'AI新头像.每日生成次数\',parseInt(this.value))"></div>';
-      html += '</div></div>';
-      
-      html += '<div class="section"><div class="section-title">红包派对配置</div>';
-      html += '<div class="form-row full"><div class="form-group"><label>开启</label>';
-      html += '<select id="redpacket-enable-' + a.id + '" onchange="window._updateConfig(' + a.id + ',\'红包派对.开启\',this.value===\'true\')">';
-      html += '<option value="false"' + (!c['红包派对']['开启'] ? ' selected' : '') + '>关闭</option>';
-      html += '<option value="true"' + (c['红包派对']['开启'] ? ' selected' : '') + '>开启</option></select></div></div></div>';
-      
-      html += '<div class="section"><div class="section-title">云朵大作战配置</div>';
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>开启</label>';
-      html += '<select id="battle-enable-' + a.id + '" onchange="window._updateConfig(' + a.id + ',\'云朵大作战.开启\',this.value===\'true\')">';
-      html += '<option value="false"' + (!c['云朵大作战']['开启'] ? ' selected' : '') + '>关闭</option>';
-      html += '<option value="true"' + (c['云朵大作战']['开启'] ? ' selected' : '') + '>开启</option></select></div>';
-      html += '<div class="form-group"><label>目标排名</label>';
-      html += '<input id="battle-rank-' + a.id + '" type="number" min="1" value="' + c['云朵大作战']['目标排名'] + '" oninput="window._updateConfig(' + a.id + ',\'云朵大作战.目标排名\',parseInt(this.value))"></div>';
-      html += '</div>';
-      html += '<div class="form-row">';
-      html += '<div class="form-group"><label>开启兑换</label>';
-      html += '<select id="battle-exchange-' + a.id + '" onchange="window._updateConfig(' + a.id + ',\'云朵大作战.开启兑换\',this.value===\'true\')">';
-      html += '<option value="false"' + (!c['云朵大作战']['开启兑换'] ? ' selected' : '') + '>关闭</option>';
-      html += '<option value="true"' + (c['云朵大作战']['开启兑换'] ? ' selected' : '') + '>开启</option></select></div>';
-      html += '<div class="form-group"><label>游戏时间 (秒)</label>';
-      html += '<input id="battle-time-' + a.id + '" type="number" min="60" max="600" value="' + c['云朵大作战']['游戏时间'] + '" oninput="window._updateConfig(' + a.id + ',\'云朵大作战.游戏时间\',parseInt(this.value))"></div>';
-      html += '</div>';
-      html += '<div class="form-row full"><div class="form-group"><label>邀请用户 (手机号逗号分隔)</label>';
-      html += '<input id="battle-invite-' + a.id + '" type="text" placeholder="如: 13800138000" onchange="window._updateConfig(' + a.id + ',\'云朵大作战.邀请用户\',this.value.split(\',\').filter(Boolean))"></div></div>';
-      html += '</div>';
-      
-      html += '<div class="section"><div class="section-title">春日拍拍大作战配置</div>';
-      html += '<div class="form-row full"><div class="form-group"><label>开启</label>';
-      html += '<select id="spring-enable-' + a.id + '" onchange="window._updateConfig(' + a.id + ',\'春日拍拍大作战.开启\',this.value===\'true\')">';
-      html += '<option value="false"' + (!c['春日拍拍大作战']['开启'] ? ' selected' : '') + '>关闭</option>';
-      html += '<option value="true"' + (c['春日拍拍大作战']['开启'] ? ' selected' : '') + '>开启</option></select></div></div></div>';
-      
-      html += '</details></div>';
-    }
-    container.innerHTML = html;
+    var html = '<div class="section-title">账号配置</div>';
+    state.accounts.forEach(function(a, index) {
+      var scope = 'account:' + a.id;
+      html += '<article class="account-item"><div class="account-header"><div class="account-title">账号 ' + (index + 1) + (a.auth ? '' : ' <span class="status">未填写 auth</span>') + '</div><button class="danger small" onclick="window.mcloudRemoveAccount(' + a.id + ')">删除</button></div>';
+      html += '<div class="form-row">' + field('auth（必填）', scope, 'auth', a.auth, 'text') + field('nickname', scope, 'nickname', a.nickname, 'text') + '</div>';
+      html += '<details><summary>高级配置</summary>';
+      html += '<div class="section"><div class="section-title">任务与账号行为</div><div class="form-row">' +
+        field('备份等待时间（秒）', scope, 'backupWaitTime', a.backupWaitTime, 'number') +
+        field('跳过任务 ID（逗号分隔）', scope, 'tasks.skipTasks', a.tasks.skipTasks.join(','), 'text') +
+        field('每月上传任务单日数量', scope, 'tasks.每月上传任务单日数量', a.tasks['每月上传任务单日数量'], 'number') +
+        selectField('打印今日云朵', scope, '是否打印今日云朵', a['是否打印今日云朵'], [['true', '是'], ['false', '否']]) +
+        field('提前刷新 token（天）', scope, '剩余多少天刷新token', a['剩余多少天刷新token'], 'number') +
+        '</div></div>';
+      html += '<div class="section"><div class="section-title">活动开关</div><div class="form-row">' +
+        selectField('AI 新头像（业务暂未实现）', scope, 'AI新头像.开启', a['AI新头像']['开启'], [['false', '关闭'], ['true', '开启']]) +
+        field('AI 新头像每日次数', scope, 'AI新头像.每日生成次数', a['AI新头像']['每日生成次数'], 'number') +
+        selectField('红包派对', scope, '红包派对.开启', a['红包派对']['开启'], [['true', '开启'], ['false', '关闭']]) +
+        selectField('拍拍系列活动', scope, '春日拍拍大作战.开启', a['春日拍拍大作战']['开启'], [['true', '开启'], ['false', '关闭']]) +
+        selectField('直播口令自动领取', scope, '直播口令.开启', a['直播口令']['开启'], [['false', '关闭'], ['true', '开启']]) +
+        '</div></div>';
+      html += '<div class="section"><div class="section-title">云朵大作战</div><div class="form-row">' +
+        selectField('开启', scope, '云朵大作战.开启', a['云朵大作战']['开启'], [['false', '关闭'], ['true', '开启']]) +
+        field('目标排名', scope, '云朵大作战.目标排名', a['云朵大作战']['目标排名'], 'number') +
+        selectField('开启兑换', scope, '云朵大作战.开启兑换', a['云朵大作战']['开启兑换'], [['false', '关闭'], ['true', '开启']]) +
+        field('游戏时间（秒）', scope, '云朵大作战.游戏时间', a['云朵大作战']['游戏时间'], 'number') +
+        field('邀请用户（逗号分隔）', scope, '云朵大作战.邀请用户', a['云朵大作战']['邀请用户'].join(','), 'text') +
+        '</div></div>';
+      html += '<div class="section"><div class="section-title">139 邮箱任务</div><div class="form-row">' +
+        field('AI 对话消息', scope, 'mail139.aiChatMessage', a.mail139.aiChatMessage, 'text') +
+        field('收件人', scope, 'mail139.sendMailTo', a.mail139.sendMailTo, 'email') +
+        field('邮件主题', scope, 'mail139.sendMailSubject', a.mail139.sendMailSubject, 'text') +
+        textareaField('邮件正文', scope, 'mail139.sendMailContent', a.mail139.sendMailContent) +
+        '</div></div>';
+      html += '</details></article>';
+    });
+    document.getElementById('accountsList').innerHTML = html;
   }
 
-  function getEditorValue() {
-    return window._jsonEditor ? window._jsonEditor.getValue() : '';
+  function renderMessage() {
+    var m = state.message;
+    var scope = 'message';
+    document.getElementById('messageForm').innerHTML =
+      '<div class="section-title">消息推送</div><div class="form-row">' +
+      field('推送标题', scope, 'title', m.title, 'text') +
+      selectField('仅运行错误时推送', scope, 'onlyError', m.onlyError, [['false', '否'], ['true', '是']]) +
+      selectField('内容最低级别', scope, 'minLevel', m.minLevel, [['error', 'error'], ['warn', 'warn'], ['info', 'info'], ['debug', 'debug']]) +
+      '</div><details><summary>推送渠道</summary>' +
+      channel('PushPlus', field('Token', scope, 'pushplus.token', m.pushplus.token, 'text')) +
+      channel('Server酱', field('SendKey', scope, 'serverChan.token', m.serverChan.token, 'text')) +
+      channel('Telegram Bot', '<div class="form-row">' + field('Token', scope, 'tgBot.token', m.tgBot.token, 'text') + field('Chat ID', scope, 'tgBot.chat_id', m.tgBot.chat_id, 'text') + field('API Host', scope, 'tgBot.apiHost', m.tgBot.apiHost, 'text') + '</div>') +
+      channel('Bark', '<div class="form-row">' + field('Key', scope, 'bark.key', m.bark.key, 'text') + selectField('通知级别', scope, 'bark.level', m.bark.level, [['passive', 'passive'], ['timeSensitive', 'timeSensitive'], ['active', 'active']]) + '</div>') +
+      channel('企业微信应用', '<div class="form-row">' + field('Corp ID', scope, 'workWeixin.corpid', m.workWeixin.corpid, 'text') + field('Corp Secret', scope, 'workWeixin.corpsecret', m.workWeixin.corpsecret, 'password') + field('Agent ID', scope, 'workWeixin.agentid', m.workWeixin.agentid, 'number') + field('接收人', scope, 'workWeixin.touser', m.workWeixin.touser, 'text') + '</div>') +
+      channel('企业微信机器人', field('Webhook URL', scope, 'workWeixinBot.url', m.workWeixinBot.url, 'url')) +
+      channel('钉钉', '<div class="form-row">' + field('Token', scope, 'dingTalk.token', m.dingTalk.token, 'text') + field('Secret', scope, 'dingTalk.secret', m.dingTalk.secret, 'password') + '</div>') +
+      channel('邮件（Node.js 运行时）', '<div class="form-row">' + field('SMTP Host', scope, 'email.host', m.email.host, 'text') + field('Port', scope, 'email.port', m.email.port, 'number') + field('发件人', scope, 'email.from', m.email.from, 'email') + field('授权码', scope, 'email.pass', m.email.pass, 'password') + field('收件人', scope, 'email.to', m.email.to, 'email') + '</div>') +
+      channel('回逍 TwoIm', '<div class="form-row">' + field('Key', scope, 'twoIm.key', m.twoIm.key, 'text') + field('SID', scope, 'twoIm.sid', m.twoIm.sid, 'text') + '</div>') +
+      channel('自定义请求', '<div class="form-row">' + field('URL', scope, 'customPost.url', m.customPost.url, 'url') + selectField('Method', scope, 'customPost.method', m.customPost.method, [['GET', 'GET'], ['POST', 'POST'], ['PUT', 'PUT']]) + textareaField('Headers（JSON 对象）', scope, 'customPost.headers', m.customPost.headers) + textareaField('Data（JSON 对象）', scope, 'customPost.data', m.customPost.data) + '</div>') +
+      '</details>';
   }
 
-  function setEditorValue(text) {
-    if (window._jsonEditor) {
-      window._jsonEditor.setValue(text);
-    }
+  function channel(title, content) {
+    return '<div class="section"><div class="section-title">' + title + '</div>' + content + '</div>';
   }
 
-  function updateJSON() {
-    var validAccounts = accounts.filter(hasValidAuth);
-    
-    var config = { caiyun: validAccounts.map(function(account) {
-      var result = {};
-      result.auth = account.auth;
-      if (account.nickname) result.nickname = account.nickname;
-      
-      var defaultCfg = getDefaultConfig();
-      var userCfg = account.config;
-      
-      Object.keys(userCfg).forEach(function(key) {
-        if (JSON.stringify(userCfg[key]) !== JSON.stringify(defaultCfg[key])) {
-          result[key] = userCfg[key];
-        }
-      });
-      
-      return result;
-    })};
-    
-    var hasMsg = messageConfig.title !== '签到推送' || messageConfig.onlyError || messageConfig.minLevel !== 'info' ||
-      messageConfig.pushplus.token || messageConfig.serverChan.token ||
-      messageConfig.workWeixin.corpid || messageConfig.workWeixinBot.url ||
-      messageConfig.tgBot.token || messageConfig.bark.key ||
-      messageConfig.dingTalk.token || messageConfig.email.host ||
-      messageConfig.twoIm.key || messageConfig.customPost.url;
-    
-    if (hasMsg) {
-      config.message = {};
-      if (messageConfig.title !== '签到推送') config.message.title = messageConfig.title;
-      if (messageConfig.onlyError) config.message.onlyError = true;
-      if (messageConfig.minLevel !== 'info') config.message.minLevel = messageConfig.minLevel;
-      if (messageConfig.pushplus.token) config.message.pushplus = { token: messageConfig.pushplus.token };
-      if (messageConfig.serverChan.token) config.message.serverChan = { token: messageConfig.serverChan.token };
-      if (messageConfig.workWeixin.corpid) config.message.workWeixin = { corpid: messageConfig.workWeixin.corpid, corpsecret: messageConfig.workWeixin.corpsecret, agentid: messageConfig.workWeixin.agentid };
-      if (messageConfig.workWeixinBot.url) config.message.workWeixinBot = { url: messageConfig.workWeixinBot.url };
-      if (messageConfig.tgBot.token) config.message.tgBot = { token: messageConfig.tgBot.token, chat_id: messageConfig.tgBot.chat_id };
-      if (messageConfig.tgBot.proxy) config.message.tgBot = config.message.tgBot || {}, config.message.tgBot.proxy = messageConfig.tgBot.proxy;
-      if (messageConfig.bark.key) config.message.bark = { key: messageConfig.bark.key };
-      if (messageConfig.dingTalk.token) config.message.dingTalk = { token: messageConfig.dingTalk.token, secret: messageConfig.dingTalk.secret };
-      if (messageConfig.email.host) config.message.email = { host: messageConfig.email.host, port: messageConfig.email.port, from: messageConfig.email.from, pass: messageConfig.email.pass, to: messageConfig.email.to };
-      if (messageConfig.twoIm.key) config.message.twoIm = { key: messageConfig.twoIm.key, sid: messageConfig.twoIm.sid };
-      if (messageConfig.customPost.url) config.message.customPost = { url: messageConfig.customPost.url, data: messageConfig.customPost.data };
-    }
-    
-    if (!isUpdatingFromJSON) {
-      setEditorValue(JSON.stringify(config, null, 2));
-    }
-    
-    var countEl = document.getElementById('accountCount');
-    if (countEl) {
-      countEl.textContent = validAccounts.length + '/' + accounts.length;
-    }
+  function render() {
+    renderCommon();
+    renderAccounts();
+    renderMessage();
+    updateEditor();
   }
 
-  function syncFromJSON() {
-    if (isUpdatingFromForm || isInitializing) return;
-    isUpdatingFromJSON = true;
-    
-    var jsonStr = getEditorValue().trim();
-    
-    if (!jsonStr) {
-      isUpdatingFromJSON = false;
-      return;
-    }
-    
+  function updateEditor() {
+    if (!editorReady || updatingEditor) return;
     try {
-      var config = JSON.parse(jsonStr);
-      importFromJSON(config);
-    } catch (e) {
+      var config = buildConfig();
+      updatingEditor = true;
+      window._jsonEditor.setValue(JSON.stringify(config, null, 2));
+      document.getElementById('accountCount').textContent = '(' + config.caiyun.length + '/' + state.accounts.length + ')';
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      updatingEditor = false;
     }
-    
-    isUpdatingFromJSON = false;
   }
 
-  function importFromJSON(config) {
-    accounts = [];
-    accountCounter = 0;
-    
-    var caiyunList = config.caiyun || [];
-    if (!Array.isArray(caiyunList)) {
-      caiyunList = [caiyunList];
+  function importConfig(config) {
+    if (!config || config.version !== 2 || !Array.isArray(config.caiyun)) throw new Error('仅支持 version 为 2 且包含 caiyun 数组的配置');
+    state.common = config.common || {};
+    state.message = merge(defaultMessage(), config.message || {});
+    if (config.message && config.message.customPost && !Array.isArray(config.message.customPost)) {
+      state.message.customPost.headers = JSON.stringify(config.message.customPost.headers || {}, null, 2);
+      state.message.customPost.data = JSON.stringify(config.message.customPost.data || {}, null, 2);
     }
-    
-    caiyunList.forEach(function(item) {
-      var id = ++accountCounter;
-      var defaultCfg = getDefaultConfig();
-      var nickname = item.nickname || '';
-      var mergedConfig = mergeConfig(defaultCfg, item);
-      
-      accounts.push({
-        id: id,
-        auth: item.auth || '',
-        nickname: nickname,
-        config: mergedConfig
-      });
+    state.accounts = config.caiyun.map(function(account) {
+      var merged = merge(defaultAccount(), account);
+      merged.id = ++nextAccountId;
+      return merged;
     });
-    
-    if (config.message) {
-      var msg = config.message;
-      if (msg.title) messageConfig.title = msg.title;
-      if (msg.onlyError !== undefined) messageConfig.onlyError = msg.onlyError;
-      if (msg.minLevel) messageConfig.minLevel = msg.minLevel;
-      if (msg.pushplus) messageConfig.pushplus = { token: msg.pushplus.token || '' };
-      if (msg.serverChan) messageConfig.serverChan = { token: msg.serverChan.token || '' };
-      if (msg.workWeixin) messageConfig.workWeixin = { corpid: msg.workWeixin.corpid || '', corpsecret: msg.workWeixin.corpsecret || '', agentid: msg.workWeixin.agentid || '' };
-      if (msg.workWeixinBot) messageConfig.workWeixinBot = { url: msg.workWeixinBot.url || '' };
-      if (msg.tgBot) messageConfig.tgBot = { token: msg.tgBot.token || '', chat_id: msg.tgBot.chat_id || '', proxy: msg.tgBot.proxy || '' };
-      if (msg.bark) messageConfig.bark = { key: msg.bark.key || '' };
-      if (msg.dingTalk) messageConfig.dingTalk = { token: msg.dingTalk.token || '', secret: msg.dingTalk.secret || '' };
-      if (msg.email) messageConfig.email = { host: msg.email.host || '', port: msg.email.port || 465, from: msg.email.from || '', pass: msg.email.pass || '', to: msg.email.to || '' };
-      if (msg.twoIm) messageConfig.twoIm = { key: msg.twoIm.key || '', sid: msg.twoIm.sid || '' };
-      if (msg.customPost) messageConfig.customPost = { url: msg.customPost.url || '', data: msg.customPost.data || '' };
-    }
-    
-    renderAccounts();
-    renderMessageForm();
-    saveToStorage();
+    if (!state.accounts.length) state.accounts.push(defaultAccount());
+    save();
+    render();
   }
 
-  window._copyConfig = function() {
-    var text = getEditorValue() || '';
-    if (text === '{"caiyun": []}' || text.includes('"caiyun": []')) {
-      alert('请至少填写一个账号的 auth');
-      return;
-    }
-    navigator.clipboard.writeText(text).then(function() {
-      alert('配置已复制到剪贴板！');
-    });
+  window.mcloudSet = function(scope, path, rawValue, type) {
+    var value = rawValue;
+    if (type === 'number') value = rawValue === '' ? undefined : Number(rawValue);
+    if (type === 'select' && (rawValue === 'true' || rawValue === 'false')) value = rawValue === 'true';
+    if (scope === 'common' && rawValue === '') value = undefined;
+    if (path === 'tasks.skipTasks') value = rawValue.split(',').map(Number).filter(Number.isFinite);
+    if (path === '云朵大作战.邀请用户') value = rawValue.split(',').map(function(item) { return item.trim(); }).filter(Boolean);
+    var target;
+    if (scope === 'common') target = state.common;
+    else if (scope === 'message') target = state.message;
+    else target = state.accounts.find(function(account) { return account.id === Number(scope.split(':')[1]); });
+    if (!target) return;
+    setPath(target, path, value);
+    save();
+    render();
   };
 
-  window._clearData = function() {
-    if (!confirm('确定要清除所有配置数据吗？此操作不可恢复。')) return;
-    localStorage.removeItem(STORAGE_KEY);
-    isUpdatingFromForm = true;
-    accounts = [];
-    accountCounter = 0;
-    renderAccounts();
-    window._addAccount();
-    isUpdatingFromForm = false;
+  window.mcloudRemoveAccount = function(id) {
+    state.accounts = state.accounts.filter(function(account) { return account.id !== id; });
+    if (!state.accounts.length) state.accounts.push(defaultAccount());
+    save();
+    render();
   };
 
-  window._exportFile = function() {
-    var text = getEditorValue() || '';
-    var blob = new Blob([text], { type: 'application/json' });
+  document.getElementById('addAccountBtn').addEventListener('click', function() {
+    state.accounts.push(defaultAccount());
+    save();
+    render();
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function() {
+    navigator.clipboard.writeText(window._jsonEditor.getValue()).then(function() { alert('配置已复制'); });
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function() {
+    var blob = new Blob([window._jsonEditor.getValue()], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'asign.json';
-    a.click();
+    var anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'asign.json';
+    anchor.click();
     URL.revokeObjectURL(url);
-  };
+  });
 
-  window._importFile = function() {
+  document.getElementById('importFileBtn').addEventListener('click', function() {
     var input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function(e) {
-      var file = e.target.files[0];
+    input.accept = '.json,application/json';
+    input.onchange = function(event) {
+      var file = event.target.files[0];
       if (!file) return;
       var reader = new FileReader();
-      reader.onload = function(ev) {
-        try {
-          var config = JSON.parse(ev.target.result);
-          importFromJSON(config);
-          setEditorValue(JSON.stringify(config, null, 2));
-        } catch (err) {
-          alert('JSON 解析失败: ' + err.message);
-        }
+      reader.onload = function() {
+        try { importConfig(JSON.parse(reader.result)); }
+        catch (error) { alert('导入失败：' + error.message); }
       };
       reader.readAsText(file);
     };
     input.click();
-  };
+  });
 
-  document.getElementById('addAccountBtn').addEventListener('click', window._addAccount);
-  document.getElementById('copyBtn').addEventListener('click', window._copyConfig);
-  document.getElementById('clearBtn').addEventListener('click', window._clearData);
-  document.getElementById('exportBtn').addEventListener('click', window._exportFile);
-  document.getElementById('importFileBtn').addEventListener('click', window._importFile);
+  document.getElementById('clearBtn').addEventListener('click', function() {
+    if (!confirm('确定清除浏览器中保存的配置吗？')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = { common: {}, accounts: [defaultAccount()], message: defaultMessage() };
+    render();
+  });
 
-  function setupEditor() {
-    if (window._jsonEditor) {
-      window._jsonEditor.onDidChangeModelContent(function() {
-        syncFromJSON();
-      });
-    }
+  window.addEventListener('mcloud-editor-ready', function() {
+    editorReady = true;
+    window._jsonEditor.onDidChangeModelContent(function() {
+      if (updatingEditor) return;
+      try {
+        importConfig(JSON.parse(window._jsonEditor.getValue()));
+      } catch (_) {
+        // 编辑中的无效 JSON 由 Monaco 诊断，不覆盖表单状态。
+      }
+    });
+    updateEditor();
+  });
+
+  if (!load()) {
+    state.accounts = [defaultAccount()];
+    state.message = defaultMessage();
+  } else if (!state.accounts.length) {
+    state.accounts = [defaultAccount()];
   }
-
-  if (_editorReady) {
-    setupEditor();
-    updateJSON();
-  } else {
-    window._onEditorReady = function() {
-      setupEditor();
-      updateJSON();
-    };
-  }
-
-  if (!loadFromStorage()) {
-    window._addAccount();
-  } else {
-    renderAccounts();
-  }
-  renderMessageForm();
-  
-  isInitializing = false;
+  if (!Object.keys(state.message).length) state.message = defaultMessage();
+  render();
 })();

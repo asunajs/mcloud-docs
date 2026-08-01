@@ -1,0 +1,551 @@
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 2,
+      "description": "配置版本号"
+    },
+    "caiyun": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "auth": {
+            "type": "string",
+            "description": "认证字符串（Base64 编码）"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "账号昵称"
+          },
+          "backupWaitTime": {
+            "type": "number",
+            "description": "备份等待时间（秒）",
+            "default": 20
+          },
+          "tasks": {
+            "type": "object",
+            "properties": {
+              "skipTasks": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "description": "跳过的任务 ID 列表",
+                "default": []
+              },
+              "每月上传任务单日数量": {
+                "type": "number",
+                "description": "每月上传任务单日完成数量",
+                "default": 5
+              }
+            },
+            "required": [],
+            "default": {}
+          },
+          "是否打印今日云朵": {
+            "type": "boolean",
+            "description": "是否打印今日云朵数量",
+            "default": true
+          },
+          "剩余多少天刷新token": {
+            "type": "number",
+            "description": "提前多少天刷新 token",
+            "default": 10
+          },
+          "AI新头像": {
+            "type": "object",
+            "properties": {
+              "开启": {
+                "type": "boolean",
+                "description": "是否启用AI新头像",
+                "default": false
+              },
+              "每日生成次数": {
+                "type": "number",
+                "description": "每日生成次数",
+                "default": 10
+              }
+            },
+            "required": []
+          },
+          "红包派对": {
+            "type": "object",
+            "properties": {
+              "开启": {
+                "type": "boolean",
+                "description": "是否启用红包派对",
+                "default": true
+              }
+            },
+            "required": []
+          },
+          "云朵大作战": {
+            "type": "object",
+            "properties": {
+              "开启": {
+                "type": "boolean",
+                "description": "是否启用云朵大作战",
+                "default": false
+              },
+              "邀请用户": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "邀请用户手机号列表",
+                "default": []
+              },
+              "游戏时间": {
+                "type": "number",
+                "description": "游戏时间（秒）",
+                "default": 300
+              },
+              "目标排名": {
+                "type": "number",
+                "description": "目标排名",
+                "default": 500
+              },
+              "开启兑换": {
+                "type": "boolean",
+                "description": "是否开启兑换",
+                "default": false
+              }
+            },
+            "required": []
+          },
+          "春日拍拍大作战": {
+            "type": "object",
+            "properties": {
+              "开启": {
+                "type": "boolean",
+                "description": "是否启用春日拍拍大作战",
+                "default": true
+              }
+            },
+            "required": []
+          },
+          "直播口令": {
+            "type": "object",
+            "properties": {
+              "开启": {
+                "type": "boolean",
+                "description": "是否启用直播口令自动领取",
+                "default": false
+              }
+            },
+            "required": []
+          },
+          "mail139": {
+            "type": "object",
+            "properties": {
+              "aiChatMessage": {
+                "type": "string",
+                "description": "AI对话消息",
+                "default": "你好"
+              },
+              "sendMailTo": {
+                "type": "string",
+                "description": "发件目标邮箱",
+                "default": ""
+              },
+              "sendMailSubject": {
+                "type": "string",
+                "description": "邮件主题",
+                "default": ""
+              },
+              "sendMailContent": {
+                "type": "string",
+                "description": "邮件内容",
+                "default": ""
+              }
+            },
+            "required": []
+          }
+        },
+        "required": [
+          "auth"
+        ]
+      },
+      "description": "账号列表"
+    },
+    "common": {
+      "type": "object",
+      "properties": {
+        "backupWaitTime": {
+          "type": "number",
+          "description": "备份等待时间（秒）",
+          "default": 20
+        },
+        "catalog": {
+          "type": "string",
+          "description": "默认备份目录",
+          "default": "/"
+        },
+        "是否打印今日云朵": {
+          "type": "boolean",
+          "description": "是否打印今日云朵数量",
+          "default": true
+        },
+        "剩余多少天刷新token": {
+          "type": "number",
+          "description": "提前多少天刷新 token",
+          "default": 10
+        },
+        "colorize": {
+          "type": "boolean",
+          "description": "是否启用彩色输出（默认自动检测）"
+        }
+      },
+      "required": [],
+      "description": "通用配置"
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "pushplus": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "description": "PushPlus token"
+            }
+          },
+          "required": [
+            "token"
+          ]
+        },
+        "serverChan": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "description": "Server酱 SendKey"
+            }
+          },
+          "required": [
+            "token"
+          ]
+        },
+        "workWeixin": {
+          "type": "object",
+          "properties": {
+            "corpid": {
+              "type": "string",
+              "description": "企业 ID"
+            },
+            "corpsecret": {
+              "type": "string",
+              "description": "应用 Secret"
+            },
+            "agentid": {
+              "type": "number",
+              "description": "应用 AgentId"
+            },
+            "touser": {
+              "type": "string",
+              "description": "接收人",
+              "default": "@all"
+            },
+            "msgtype": {
+              "enum": [
+                "text",
+                "markdown"
+              ],
+              "type": "string",
+              "description": "消息类型",
+              "default": "text"
+            }
+          },
+          "required": [
+            "corpid",
+            "corpsecret"
+          ]
+        },
+        "workWeixinBot": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "机器人 Webhook URL"
+            },
+            "msgtype": {
+              "enum": [
+                "text",
+                "markdown"
+              ],
+              "type": "string",
+              "description": "消息类型",
+              "default": "text"
+            }
+          },
+          "required": [
+            "url"
+          ]
+        },
+        "tgBot": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "description": "Telegram Bot Token"
+            },
+            "chat_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "Chat ID"
+            },
+            "apiHost": {
+              "type": "string",
+              "description": "API 地址",
+              "default": "api.telegram.org"
+            }
+          },
+          "required": [
+            "token",
+            "chat_id"
+          ]
+        },
+        "bark": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description": "Bark Key"
+            },
+            "level": {
+              "enum": [
+                "passive",
+                "timeSensitive",
+                "active"
+              ],
+              "type": "string",
+              "description": "通知级别",
+              "default": "passive"
+            }
+          },
+          "required": [
+            "key"
+          ]
+        },
+        "twoIm": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description": "回逍 Key"
+            },
+            "sid": {
+              "type": "string",
+              "description": "回逍 SID"
+            },
+            "query": {
+              "type": "object",
+              "properties": {
+                "plat": {
+                  "type": "string"
+                },
+                "group": {
+                  "type": "string"
+                },
+                "icon": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              "required": []
+            },
+            "msgtype": {
+              "enum": [
+                "text",
+                "markdown"
+              ],
+              "type": "string",
+              "description": "消息类型",
+              "default": "text"
+            }
+          },
+          "required": [
+            "key",
+            "sid"
+          ]
+        },
+        "dingTalk": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "description": "钉钉机器人 access_token"
+            },
+            "secret": {
+              "type": "string",
+              "description": "加签密钥"
+            }
+          },
+          "required": [
+            "token"
+          ]
+        },
+        "email": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string",
+              "description": "邮箱 SMTP 服务器"
+            },
+            "port": {
+              "type": "number",
+              "description": "端口",
+              "default": 465
+            },
+            "from": {
+              "type": "string",
+              "description": "发件人邮箱"
+            },
+            "pass": {
+              "type": "string",
+              "description": "邮箱密码/授权码"
+            },
+            "to": {
+              "type": "string",
+              "description": "收件人邮箱"
+            }
+          },
+          "required": [
+            "host",
+            "from",
+            "pass"
+          ]
+        },
+        "customPost": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "请求 URL，支持 {title} {text} 占位符"
+                },
+                "method": {
+                  "enum": [
+                    "GET",
+                    "POST",
+                    "PUT"
+                  ],
+                  "type": "string",
+                  "default": "POST"
+                },
+                "headers": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "data": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "url"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "请求 URL"
+                  },
+                  "method": {
+                    "enum": [
+                      "GET",
+                      "POST",
+                      "PUT"
+                    ],
+                    "type": "string",
+                    "default": "POST"
+                  },
+                  "headers": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "data": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "description": "推送标题",
+          "default": "mcloud-v2 运行推送"
+        },
+        "onlyError": {
+          "type": "boolean",
+          "description": "仅在有错误时推送",
+          "default": false
+        },
+        "minLevel": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warn"
+            },
+            {
+              "const": "info"
+            },
+            {
+              "const": "debug"
+            }
+          ],
+          "description": "推送日志级别",
+          "default": "info"
+        }
+      },
+      "required": [],
+      "description": "消息推送配置"
+    }
+  },
+  "required": [
+    "version",
+    "caiyun"
+  ],
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

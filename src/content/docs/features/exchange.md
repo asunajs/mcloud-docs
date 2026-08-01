@@ -1,117 +1,69 @@
 ---
 title: 云朵兑换
-description: 云朵兑换功能说明（普通兑换 + 整点抢兑）
+description: 查看奖品与整点兑换
 ---
 
-兑换用于将签到累积的云朵兑换为奖品（如视频会员）。
+单文件 CLI 导出 `printExchangeList` 和 `exchange`，可以在普通签到之外独立调用。
 
-## 查看可兑换奖品
-
-创建 `exchange.mjs`：
+## 查看奖品
 
 ```javascript
-import { printExchangeList } from "./index.mjs";
+import { printExchangeList } from "./index.node.mjs";
+
 await printExchangeList();
 ```
 
-```bash
-node exchange.mjs
-```
+函数会加载当前配置并打印可兑换奖品、云朵价格、库存与兑换限制。
 
-输出示例：
-
-```
-------【兑换奖品列表】------
-【热门兑换】
-231228018 | 200云朵 | 视频会员7天 | 可兑换 | 今日剩余: 50/100
-------------------------
-```
-
-## 整点抢兑
-
-### 基本用法
+## 兑换指定奖品
 
 ```javascript
-import { exchange } from "./index.mjs";
+import { exchange } from "./index.node.mjs";
+
+// 奖品 ID + 第一个账号
 await exchange(251230069, 1);
+
+// 按名称查找 + 按昵称选择账号
+await exchange("腾讯视频", "主账号");
 ```
 
-第一个参数是奖品 ID（从 `printExchangeList` 获取），第二个参数是账号编号（从 1 开始）。
+账号数字从 `1` 开始；字符串按 `nickname` 匹配。
 
-### 按奖品名称兑换
+## 提前量
 
-如果不想记 ID，可以直接写奖品名称：
+第三个参数是整点前的请求提前量，默认 `10` 毫秒：
 
 ```javascript
-import { exchange } from "./index.mjs";
-await exchange("腾讯视频", 1);
+await exchange(251230069, "主账号", 50);
 ```
 
-### 按昵称查找账号
+执行流程包括等待预热时间、上报访问日志、获取滑块偏移量、精确等待整点和提交兑换。验证失败代码为 `514` 时会重新获取滑块并重试一次。
 
-在配置文件中为账号设置 `nickname`，兑换时可以直接用昵称代替编号：
-
-```json
-{
-  "caiyun": [
-    { "auth": "xxx", "nickname": "我的账号" },
-    { "auth": "yyy", "nickname": "小号" }
-  ]
-}
-```
+## 多账号并发
 
 ```javascript
-import { exchange } from "./index.mjs";
-await exchange(251230069, "我的账号");
-```
-
-### 自定义提前量
-
-默认在整点前 10ms 发起请求，可以调整：
-
-```javascript
-import { exchange } from "./index.mjs";
-await exchange(251230069, 1, 50);
-```
-
-第三个参数是提前多少毫秒，默认 10。
-
-### 多账号同时兑换
-
-```javascript
-import { exchange } from "./index.mjs";
 await exchange([
-  [251230069, 1],
-  ["酷狗音乐", 2],
+  [251230069, "主账号"],
+  ["酷狗音乐", "小号"]
 ], 50);
 ```
 
-数组中每个元素是 `[奖品, 账号]`，最后一个参数是提前量。
+数组项为 `[奖品 ID 或名称, 账号索引或昵称]`；第二个参数在数组模式下作为提前量。
 
-### 跳过等待直接兑换
+## 测试模式
 
-测试时可以跳过整点等待：
+第四个参数 `true` 会跳过时间等待并立即兑换：
 
 ```javascript
-import { exchange } from "./index.mjs";
 await exchange(251230069, 1, 10, true);
 ```
 
-第四个参数 `true` 表示跳过等待，直接执行兑换。
+这仍会实际请求兑换接口，只应在明确需要时使用。
 
-**抢兑流程**：自动等待到运行时间（9:59:40 或 11:59:40）→ 预热（滑块验证）→ 精确等待整点 → 立即兑换
+## 指定配置文件
 
-## 按条件查找奖品
+`exchange` 的第五个参数可指定配置路径：
 
 ```javascript
-import { getExchangeList, findPrize } from "./index.mjs";
-
-const list = await getExchangeList();
-if (!list) return;
-
-// 按名称查找
-const prize = findPrize(list, { name: "视频会员" });
-
-// 按类型查找，优先库存最多的
-const prize = findPrize(list, { type: 1, byRemainder: true });
+await exchange(251230069, 1, 10, false, "/absolute/path/to/asign.json");
 ```
