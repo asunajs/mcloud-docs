@@ -125,17 +125,6 @@
             },
             "required": []
           },
-          "直播口令": {
-            "type": "object",
-            "properties": {
-              "开启": {
-                "type": "boolean",
-                "description": "是否启用直播口令自动领取",
-                "default": false
-              }
-            },
-            "required": []
-          },
           "mail139": {
             "type": "object",
             "properties": {
@@ -163,9 +152,7 @@
             "required": []
           }
         },
-        "required": [
-          "auth"
-        ]
+        "required": ["auth"]
       },
       "description": "账号列表"
     },
@@ -211,9 +198,7 @@
               "description": "PushPlus token"
             }
           },
-          "required": [
-            "token"
-          ]
+          "required": ["token"]
         },
         "serverChan": {
           "type": "object",
@@ -223,9 +208,7 @@
               "description": "Server酱 SendKey"
             }
           },
-          "required": [
-            "token"
-          ]
+          "required": ["token"]
         },
         "workWeixin": {
           "type": "object",
@@ -248,19 +231,13 @@
               "default": "@all"
             },
             "msgtype": {
-              "enum": [
-                "text",
-                "markdown"
-              ],
+              "enum": ["text", "markdown"],
               "type": "string",
               "description": "消息类型",
               "default": "text"
             }
           },
-          "required": [
-            "corpid",
-            "corpsecret"
-          ]
+          "required": ["corpid", "corpsecret"]
         },
         "workWeixinBot": {
           "type": "object",
@@ -270,18 +247,13 @@
               "description": "机器人 Webhook URL"
             },
             "msgtype": {
-              "enum": [
-                "text",
-                "markdown"
-              ],
+              "enum": ["text", "markdown"],
               "type": "string",
               "description": "消息类型",
               "default": "text"
             }
           },
-          "required": [
-            "url"
-          ]
+          "required": ["url"]
         },
         "tgBot": {
           "type": "object",
@@ -307,10 +279,7 @@
               "default": "api.telegram.org"
             }
           },
-          "required": [
-            "token",
-            "chat_id"
-          ]
+          "required": ["token", "chat_id"]
         },
         "bark": {
           "type": "object",
@@ -320,19 +289,13 @@
               "description": "Bark Key"
             },
             "level": {
-              "enum": [
-                "passive",
-                "timeSensitive",
-                "active"
-              ],
+              "enum": ["passive", "timeSensitive", "active"],
               "type": "string",
               "description": "通知级别",
               "default": "passive"
             }
           },
-          "required": [
-            "key"
-          ]
+          "required": ["key"]
         },
         "twoIm": {
           "type": "object",
@@ -368,19 +331,13 @@
               "required": []
             },
             "msgtype": {
-              "enum": [
-                "text",
-                "markdown"
-              ],
+              "enum": ["text", "markdown"],
               "type": "string",
               "description": "消息类型",
               "default": "text"
             }
           },
-          "required": [
-            "key",
-            "sid"
-          ]
+          "required": ["key", "sid"]
         },
         "dingTalk": {
           "type": "object",
@@ -394,9 +351,7 @@
               "description": "加签密钥"
             }
           },
-          "required": [
-            "token"
-          ]
+          "required": ["token"]
         },
         "email": {
           "type": "object",
@@ -423,11 +378,7 @@
               "description": "收件人邮箱"
             }
           },
-          "required": [
-            "host",
-            "from",
-            "pass"
-          ]
+          "required": ["host", "from", "pass"]
         },
         "customPost": {
           "anyOf": [
@@ -439,11 +390,7 @@
                   "description": "请求 URL，支持 {title} {text} 占位符"
                 },
                 "method": {
-                  "enum": [
-                    "GET",
-                    "POST",
-                    "PUT"
-                  ],
+                  "enum": ["GET", "POST", "PUT"],
                   "type": "string",
                   "default": "POST"
                 },
@@ -464,9 +411,7 @@
                   "additionalProperties": {}
                 }
               },
-              "required": [
-                "url"
-              ]
+              "required": ["url"]
             },
             {
               "type": "array",
@@ -478,11 +423,7 @@
                     "description": "请求 URL"
                   },
                   "method": {
-                    "enum": [
-                      "GET",
-                      "POST",
-                      "PUT"
-                    ],
+                    "enum": ["GET", "POST", "PUT"],
                     "type": "string",
                     "default": "POST"
                   },
@@ -503,9 +444,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "url"
-                ]
+                "required": ["url"]
               }
             }
           ]
@@ -543,9 +482,6 @@
       "description": "消息推送配置"
     }
   },
-  "required": [
-    "version",
-    "caiyun"
-  ],
+  "required": ["version", "caiyun"],
   "$schema": "http://json-schema.org/draft-07/schema#"
 }

@@ -8,7 +8,7 @@ description: 查看奖品与整点兑换
 ## 查看奖品
 
 ```javascript
-import { printExchangeList } from "./index.node.mjs";
+import { printExchangeList } from "./index.mjs";
 
 await printExchangeList();
 ```
@@ -18,7 +18,7 @@ await printExchangeList();
 ## 兑换指定奖品
 
 ```javascript
-import { exchange } from "./index.node.mjs";
+import { exchange } from "./index.mjs";
 
 // 奖品 ID + 第一个账号
 await exchange(251230069, 1);

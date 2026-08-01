@@ -61,7 +61,7 @@ description: 推送触发条件、内容过滤与渠道配置
 | 自定义请求 | `customPost` | `url`；支持单个对象或数组 |
 
 :::note[运行时差异]
-SMTP 邮件推送只在 Node.js 运行时执行。txiki.js 构建使用无操作邮件适配，其他 HTTP 推送渠道不受此限制。
+当前邮件推送在共享模块中动态导入 `nodemailer`，已提交构建配置没有为 txiki.js 替换成无操作适配。Node.js 可按配置使用 SMTP；txiki.js 目标启用邮件推送前需要单独验证兼容性。
 :::
 
 ## Telegram 示例

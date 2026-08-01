@@ -38,17 +38,18 @@ npm run fmt
 
 ## CLI 单文件产物
 
-根 `tsup.config.ts` 以 `packages/cli/src/index.ts` 为入口，关闭代码分割并内联第三方运行依赖：
+根 `tsup.config.ts` 以 `packages/cli/src/index.ts` 为入口，关闭代码分割。两个构建命令默认都输出：
 
 ```text
-out/index.node.mjs
-out/index.tjs.mjs
+out/index.mjs
 ```
 
 - Node.js 目标：`platform: node`、`target: node20`。
-- txiki.js 目标：`platform: neutral`、`target: esnext`。
+- txiki.js 目标：`platform: neutral`、`target: esnext`，并将 `tjs:*` 标为 external。
 - 版本号由根 `package.json` 注入 `__APP_VERSION__`。
-- tjs 构建通过 alias 将 Node Runtime 与 SMTP 实现替换为 tjs 版本。
+- tjs 构建通过 alias 将 `packages/runtime/src/node.ts` 替换为 `tjs.ts`。
+- 当前配置未为 Node.js 与 txiki.js 生成不同文件名；后一次构建会覆盖前一次产物。
+- 当前 alias 不替换 SMTP 实现，Runtime 接口也尚未统一 WebSocket。
 
 ## 其他构建脚本
 
@@ -65,4 +66,4 @@ npm run typecheck
 npm run lint
 ```
 
-需要验证发布产物时，再额外运行两个 CLI 单文件构建，并检查产物中没有残留第三方裸导入。
+需要验证发布产物时，应分别运行两个 CLI 单文件构建，并在每次构建后检查 `out/index.mjs` 的依赖边界和目标运行时兼容性；不要假设两个目标产物会同时保留。

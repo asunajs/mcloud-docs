@@ -39,7 +39,7 @@ public/config.schema.json  # Monaco 使用的配置 schema
 
 ## 同步原则
 
-文档事实以 `mcloud-sign` 当前源码为准，尤其是：
+正式文档事实以 `mcloud-sign` Git `HEAD` 的已提交源码为准，而不是本地未提交工作区。核对时重点查看：
 
 - `packages/shared/src/config/schema.ts`
 - `packages/shared/generated/defaults.ts`
@@ -48,7 +48,7 @@ public/config.schema.json  # Monaco 使用的配置 schema
 - 根 `package.json` 与 `tsup.config.ts`
 - `TASKS.md`
 
-配置生成器的 schema 和默认值发生变化时，应与上述生成产物同步，避免生成错误配置。当前 `public/config.schema.json` 是主项目生成 schema 的同步副本，供 Monaco 诊断使用。
+配置生成器的 schema 和默认值发生变化时，应从主项目 Git `HEAD` 读取对应生成产物并同步，避免把未提交字段提前发布。当前 `public/config.schema.json` 是主项目已提交生成 schema 的同步副本，供 Monaco 诊断使用。
 
 ## 访问门禁
 

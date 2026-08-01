@@ -26,12 +26,12 @@ npm run build:cli
 npm run build:cli:tjs
 ```
 
-产物位于：
+两个命令默认都写入 `out/index.mjs`：
 
-- `out/index.node.mjs`：Node.js 版本。
-- `out/index.tjs.mjs`：txiki.js 版本。
+- `npm run build:cli` 生成 Node.js 目标。
+- `npm run build:cli:tjs` 生成 txiki.js 目标，并会覆盖同名文件。
 
-两个 CLI 产物都会内联第三方运行依赖。Node.js 版本仅保留 Node.js 内置模块为 external；txiki.js 版本仅保留运行时提供的 `tjs:*` 模块为 external。
+如需同时保留两个目标的产物，应在每次构建后自行复制或重命名。txiki.js 构建将 `tjs:*` 保留为运行时模块。
 
 :::note
 仓库根目录的 `npm run build` 会构建全部 workspaces，不等同于仅生成发布用 CLI 单文件。
@@ -73,13 +73,13 @@ npm run dev:cli
 ### Node.js 单文件
 
 ```bash
-node out/index.node.mjs
+node out/index.mjs
 ```
 
 ### 编程调用
 
 ```javascript
-import { run } from "./out/index.node.mjs";
+import { run } from "./out/index.mjs";
 
 await run();
 // 或指定配置文件
@@ -93,7 +93,7 @@ await run("/absolute/path/to/asign.json");
 每个账号会独立初始化并依次执行：
 
 1. 网盘签到、复活奖励和任务扩展。
-2. 拍拍系列活动、趣玩 AI 抽奖、红包派对、直播口令等按配置或当前实现调度的活动。
+2. 拍拍系列活动、趣玩 AI 抽奖和红包派对等已接入调度的活动。
 3. 消息推送奖励、通知奖励、备份礼物和 App 任务。
 4. 云朵大作战（按配置）。
 5. 待领取奖品、领取云朵和临时文件清理。

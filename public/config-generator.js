@@ -28,7 +28,6 @@
         '开启兑换': false
       },
       '春日拍拍大作战': { '开启': true },
-      '直播口令': { '开启': false },
       mail139: {
         aiChatMessage: '你好',
         sendMailTo: '',
@@ -232,7 +231,6 @@
         field('AI 新头像每日次数', scope, 'AI新头像.每日生成次数', a['AI新头像']['每日生成次数'], 'number') +
         selectField('红包派对', scope, '红包派对.开启', a['红包派对']['开启'], [['true', '开启'], ['false', '关闭']]) +
         selectField('拍拍系列活动', scope, '春日拍拍大作战.开启', a['春日拍拍大作战']['开启'], [['true', '开启'], ['false', '关闭']]) +
-        selectField('直播口令自动领取', scope, '直播口令.开启', a['直播口令']['开启'], [['false', '关闭'], ['true', '开启']]) +
         '</div></div>';
       html += '<div class="section"><div class="section-title">云朵大作战</div><div class="form-row">' +
         selectField('开启', scope, '云朵大作战.开启', a['云朵大作战']['开启'], [['false', '关闭'], ['true', '开启']]) +

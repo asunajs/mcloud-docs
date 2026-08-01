@@ -8,23 +8,23 @@ description: 使用单文件产物运行和调度 mcloud-sign
 将以下文件放在同一工作目录：
 
 ```text
-index.node.mjs
+index.mjs
 asign.json
 ```
 
 运行：
 
 ```bash
-node index.node.mjs
+node index.mjs
 ```
 
-第三方运行依赖已经内联，无需在部署目录再次安装项目依赖。Node.js 内置模块仍由运行时提供。
+该命令使用根 `tsup.config.ts` 生成单文件入口。部署前应对实际产物做一次运行验证，确认目标环境能够提供产物保留的运行时模块。
 
 ## cron 定时运行
 
 ```text
 # 每天早上 8:00 执行
-0 8 * * * cd /path/to/mcloud-sign && /usr/bin/node index.node.mjs >> run.log 2>&1
+0 8 * * * cd /path/to/mcloud-sign && /usr/bin/node index.mjs >> run.log 2>&1
 ```
 
 建议：
@@ -37,7 +37,7 @@ node index.node.mjs
 ## 编程调用
 
 ```javascript
-import { run } from "./index.node.mjs";
+import { run } from "./index.mjs";
 
 // 自动搜索配置
 await run();
@@ -58,7 +58,7 @@ import {
   exchange,
   printExchangeList,
   run,
-} from "./index.node.mjs";
+} from "./index.mjs";
 ```
 
 - `drawRedFlower(codes, configPath?)`：遍历配置账号领取指定口令。
@@ -67,4 +67,6 @@ import {
 
 ## txiki.js
 
-项目也可生成 `out/index.tjs.mjs`。该版本使用 txiki.js Runtime Adapter，WebSocket、文件系统、加密和 Buffer 等能力由运行时抽象统一。SMTP 邮件推送仅在 Node.js 运行时可用，txiki.js 构建会使用对应的无操作适配实现。
+运行 `npm run build:cli:tjs` 也会生成 `out/index.mjs`，并覆盖此前的 Node.js 目标产物。该构建通过 alias 将 Node Runtime 替换为 txiki.js Runtime，统一文件系统、路径、Buffer、加密、压缩和进程信息等基础能力。
+
+当前已提交 Runtime 接口不包含 WebSocket；直播任务仍直接依赖 Node.js 的 `ws`。邮件推送也仍在共享推送模块中动态导入 `nodemailer`。因此不能把当前 txiki.js 产物描述为已经完整适配直播 WebSocket 与 SMTP，部署前应按实际启用功能验证。

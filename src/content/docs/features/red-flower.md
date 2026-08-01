@@ -1,43 +1,20 @@
 ---
 title: 小红花与直播口令
-description: 手工口令领取与自动聚合领取
+description: 手工口令领取与直播口令核心任务边界
 ---
 
-mcloud-sign 提供两种小红花领取方式：手工传入口令，以及按账号配置自动采集直播口令。
+mcloud-sign 已提供手工口令领取入口，并包含直播 WebSocket 口令抓取的核心任务。
 
-## 自动采集（推荐）
-
-在账号配置中开启：
-
-```json
-{
-  "version": 2,
-  "caiyun": [
-    {
-      "auth": "认证信息",
-      "直播口令": {
-        "开启": true
-      }
-    }
-  ]
-}
-```
-
-`liveRoomKoulingTask` 会把以下来源视为同级来源并行执行：
-
-1. 移动云盘直播 WebSocket 弹幕。
-2. 固定小红书公开主页的服务端 HTML。
-
-两个来源独立容错，随后合并、清洗并去重。领取始终复用当前账号上下文，不会在每个账号任务里再次遍历全部账号。
-
-该开关默认关闭，避免普通签到运行无条件连接直播服务和触发口令兑换。
+:::caution[尚未接入默认流程]
+`liveRoomKoulingTask` 当前没有配置开关，也未接入 CLI 默认调度。正式配置 schema 中不存在 `直播口令` 字段，不应把它写入 `asign.json`。
+:::
 
 ## 手工领取
 
 单文件入口导出 `drawRedFlower`：
 
 ```javascript
-import { drawRedFlower } from "./index.node.mjs";
+import { drawRedFlower } from "./index.mjs";
 
 await drawRedFlower([
   "云盘宠粉会员日",
@@ -61,11 +38,20 @@ await drawRedFlower(["口令内容"], "/absolute/path/to/asign.json");
 4. 逐个兑换口令。
 5. 查询复活花和最终数量。
 
-已兑换口令属于业务结果，会记录为 info；请求或运行异常才记录 error。
+已兑换口令等接口业务结果会记录为 info；请求或运行异常才记录 error。
+
+## 已提交的自动抓取核心
+
+`getLiveKouling` 会尝试从移动云盘直播间获取口令：
+
+1. 优先通过 WebSocket 实时监听直播弹幕。
+2. 未获取到口令时，尝试读取聊天历史接口。
+3. 使用集合合并去重后返回口令。
+
+`liveRoomKoulingTask` 会调用该函数，再执行小红花领取。但它目前只是核心能力，不属于 CLI 默认执行流程。
 
 ## 注意事项
 
 - 口令通常有活动时效，过期后接口会返回业务结果。
-- 小红书页面结构变化可能导致该来源暂时提取不到内容，但不会阻断 WebSocket 来源。
-- WebSocket 无可用直播间时，也不会阻断小红书来源。
-- 自动任务获取的口令会合并去重；手工调用时仍建议自行去重。
+- 聊天历史接口可能不可用，代码会将其作为 WebSocket 未命中后的尝试，而不是可保证成功的来源。
+- 手工调用时仍建议自行去重。

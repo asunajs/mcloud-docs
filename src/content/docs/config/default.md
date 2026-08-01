@@ -33,9 +33,6 @@ description: 当前源码生成的账号与通用配置默认值
   "春日拍拍大作战": {
     "开启": true
   },
-  "直播口令": {
-    "开启": false
-  },
   "mail139": {
     "aiChatMessage": "你好",
     "sendMailTo": "",

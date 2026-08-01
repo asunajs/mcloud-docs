@@ -12,7 +12,7 @@ description: mcloud-sign monorepo、依赖方向与双运行时设计
 | 工作区 | npm workspaces |
 | 构建 | tsup / esbuild |
 | HTTP | ofetch |
-| WebSocket | Node.js 使用 `ws`，txiki.js 使用原生 WebSocket |
+| WebSocket | 已提交直播任务直接使用 Node.js `ws` |
 | 协议 | SockJS + Protobuf |
 | 配置描述 | Valibot schema + 生成的类型和 JSON Schema |
 | 测试 | Vitest + Node/tjs 运行时对比测试 |
@@ -53,17 +53,18 @@ api ─────┘
 - 文件系统和路径。
 - Buffer 与文本编码。
 - 加密与随机字节。
-- WebSocket 事件和二进制消息。
+- 压缩与解压。
 - 进程与运行环境信息。
 
-Node.js WebSocket 适配器包装 `ws`；txiki.js 使用原生 WebSocket，并将 `binaryType` 设为 `arraybuffer`，以便 Protobuf 解码得到一致的二进制输入。
+当前已提交的 `Runtime` 接口不包含 WebSocket。直播任务仍直接导入 Node.js `ws`，因此 WebSocket 尚未纳入双运行时统一适配边界。
 
 ## 构建边界
 
-CLI 单文件会内联第三方运行依赖：
+根 `tsup.config.ts` 关闭代码分割，并分别提供 Node.js 与 txiki.js 构建目标：
 
-- Node.js 版本只 externalize Node.js 内置模块。
-- txiki.js 版本只 externalize `tjs:*`。
-- SMTP 实现按构建目标替换：Node.js 使用真实实现，txiki.js 使用无操作适配。
+- Node.js 使用 `platform: node` 和 `target: node20`。
+- txiki.js 使用 `platform: neutral` 和 `target: esnext`，仅显式 externalize `tjs:*`。
+- 两个命令都输出 `out/index.mjs`，后一次构建会覆盖前一次产物。
+- tjs alias 只替换 Runtime 的 Node 实现；SMTP 和直播 WebSocket 尚未按构建目标拆分。
 
-这种边界使产物可独立分发，同时避免把运行时本身已经提供的模块重复打包。
+因此当前架构已统一多项基础运行时能力，但尚不能把所有功能视为完整的双运行时适配。

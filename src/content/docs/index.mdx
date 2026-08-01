@@ -3,7 +3,7 @@ title: mcloud-sign
 description: 支持 Node.js 与 txiki.js 的移动云盘自动签到和任务执行工具
 template: splash
 hero:
-  tagline: 多账号、任务自动化、直播口令与消息推送，一份配置即可运行
+  tagline: 多账号、任务自动化、活动兑换与消息推送，一份配置即可运行
   actions:
     - text: 快速开始
       link: /guides/getting-started
@@ -20,20 +20,20 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 	<Card title="签到与日常任务" icon="star">
 		执行每日签到、复活奖励、任务扩展、通知奖励、备份礼物和 App 任务。
 	</Card>
-	<Card title="直播口令" icon="comment">
-		按配置并行获取 WebSocket 与小红书主页口令，合并去重后领取小红花。
+	<Card title="小红花口令" icon="comment">
+		提供独立入口，按指定口令为配置中的账号领取小红花。
 	</Card>
 	<Card title="活动与兑换" icon="puzzle">
 		支持红包派对、云朵大作战、拍拍系列活动、兑换列表和独立兑换。
 	</Card>
 	<Card title="多账号" icon="seti:user">
-		账号按顺序执行，任务状态和认证信息在账号上下文中隔离。
+		按配置顺序加载并执行多个移动云盘账号。
 	</Card>
 	<Card title="消息推送" icon="bell">
 		支持 PushPlus、Server酱、企业微信、Telegram、Bark、钉钉、邮件等渠道。
 	</Card>
 	<Card title="双运行时" icon="rocket">
-		提供 Node.js 与 txiki.js 单文件构建，第三方运行依赖内联到产物。
+		提供 Node.js 与 txiki.js 构建入口，通过 Runtime Adapter 统一基础能力。
 	</Card>
 </CardGrid>
 
